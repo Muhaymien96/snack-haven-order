@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -53,12 +55,6 @@ const Navbar = () => {
               Products
             </Link>
             <Link 
-              to="/order" 
-              className={`text-earth hover:text-terracotta transition-colors ${isActive('/order') ? 'font-medium' : ''}`}
-            >
-              Order
-            </Link>
-            <Link 
               to="/contact" 
               className={`text-earth hover:text-terracotta transition-colors ${isActive('/contact') ? 'font-medium' : ''}`}
             >
@@ -69,11 +65,20 @@ const Navbar = () => {
                 <ShoppingBag size={24} />
               </Button>
             </Link>
-            <Link to="/account">
-              <Button variant="ghost" size="icon" aria-label="Account">
-                <User size={24} />
-              </Button>
-            </Link>
+            {user ? (
+              <Link to="/account">
+                <Button variant="ghost" size="icon" aria-label="Account">
+                  <User size={24} />
+                </Button>
+              </Link>
+            ) : (
+              <Link 
+                to="/login" 
+                className={`text-earth hover:text-terracotta transition-colors ${isActive('/login') ? 'font-medium' : ''}`}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -97,28 +102,33 @@ const Navbar = () => {
               Products
             </Link>
             <Link 
-              to="/order" 
-              className={`text-earth hover:text-terracotta transition-colors py-2 ${isActive('/order') ? 'font-medium' : ''}`}
-              onClick={closeMenu}
-            >
-              Order
-            </Link>
-            <Link 
               to="/contact" 
               className={`text-earth hover:text-terracotta transition-colors py-2 ${isActive('/contact') ? 'font-medium' : ''}`}
               onClick={closeMenu}
             >
               Contact
             </Link>
+            {user ? (
+              <Link 
+                to="/account" 
+                className={`text-earth hover:text-terracotta transition-colors py-2 ${isActive('/account') ? 'font-medium' : ''}`}
+                onClick={closeMenu}
+              >
+                My Account
+              </Link>
+            ) : (
+              <Link 
+                to="/login" 
+                className={`text-earth hover:text-terracotta transition-colors py-2 ${isActive('/login') ? 'font-medium' : ''}`}
+                onClick={closeMenu}
+              >
+                Login
+              </Link>
+            )}
             <div className="flex space-x-4 py-2">
               <Link to="/cart" onClick={closeMenu}>
                 <Button variant="ghost" size="icon" aria-label="Shopping cart">
                   <ShoppingBag size={24} />
-                </Button>
-              </Link>
-              <Link to="/account" onClick={closeMenu}>
-                <Button variant="ghost" size="icon" aria-label="Account">
-                  <User size={24} />
                 </Button>
               </Link>
             </div>

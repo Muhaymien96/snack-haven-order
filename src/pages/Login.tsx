@@ -1,13 +1,15 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     mobileNumber: '',
@@ -24,18 +26,22 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Here we would integrate with Supabase for user login
-      console.log('Logging in user:', formData);
-      
-      // Simulate API call
-      setTimeout(() => {
-        toast.success('Login successful!');
-        // Here we would redirect to products page or dashboard
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: `${formData.mobileNumber}@user.snackhaven.co.za`,
+        password: formData.password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Login successful!');
+      navigate('/products');
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast.error('Login failed. Please check your credentials.');
+      toast.error(error.message || 'Login failed. Please check your credentials.');
+    } finally {
       setIsLoading(false);
     }
   };

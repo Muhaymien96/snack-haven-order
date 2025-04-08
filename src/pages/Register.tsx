@@ -1,13 +1,15 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Register = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -36,18 +38,31 @@ const Register = () => {
     }
 
     try {
-      // Here we would integrate with Supabase for user registration
-      console.log('Registering user:', formData);
-      
-      // Simulate API call
-      setTimeout(() => {
-        toast.success('Registration successful! You can now log in.');
-        // Here we would redirect to login
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
+      // Register user with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: `${formData.mobileNumber}@user.snackhaven.co.za`, // Using mobile as unique identifier
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            surname: formData.surname,
+            block_number: parseInt(formData.blockNumber),
+            unit_number: parseInt(formData.unitNumber),
+            mobile_number: formData.mobileNumber,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Registration successful! You can now log in.');
+      navigate('/login');
+    } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error('Registration failed. Please try again.');
+      toast.error(error.message || 'Registration failed. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };

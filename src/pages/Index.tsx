@@ -1,34 +1,22 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { user, error } = await getCurrentUser();
-        
-        if (error) {
-          console.error('Error checking auth status:', error);
-        }
-
-        // If user is authenticated, navigate to products
-        // Otherwise navigate to landing page
-        if (user) {
-          navigate('/products');
-        } else {
-          navigate('/');
-        }
-      } catch (err) {
-        console.error('Error in auth check:', err);
+    if (!loading) {
+      // If user is authenticated, navigate to products
+      // Otherwise navigate to landing page
+      if (user) {
+        navigate('/products');
+      } else {
         navigate('/');
       }
-    };
-
-    checkAuth();
-  }, [navigate]);
+    }
+  }, [user, loading, navigate]);
 
   // Return a loading state while checking
   return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
