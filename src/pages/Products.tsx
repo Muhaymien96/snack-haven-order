@@ -4,11 +4,15 @@ import { products } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, ShoppingCart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useCart } from '@/contexts/CartContext';
+import { Link } from 'react-router-dom';
 
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { cartCount } = useCart();
 
   const categories = [...new Set(products.map(product => product.category))];
   
@@ -22,7 +26,21 @@ const Products = () => {
 
   return (
     <div className="container-custom py-12">
-      <h1 className="text-3xl font-bold text-earth mb-8">Our Products</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <h1 className="text-3xl font-bold text-earth">Our Products</h1>
+        
+        <Link to="/cart">
+          <Button variant="outline" className="mt-4 md:mt-0 relative">
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            View Cart
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-terracotta text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Button>
+        </Link>
+      </div>
       
       {/* Search and filter */}
       <div className="mb-8 space-y-4">
@@ -64,8 +82,7 @@ const Products = () => {
           {filteredProducts.map(product => (
             <ProductCard 
               key={product.id} 
-              product={product} 
-              onAddToCart={(product) => console.log('Add to cart:', product)}
+              product={product}
             />
           ))}
         </div>

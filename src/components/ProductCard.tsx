@@ -2,18 +2,24 @@
 import { ProductType } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useCart } from '@/contexts/CartContext';
+import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, ShoppingCart } from 'lucide-react';
 
 type ProductCardProps = {
   product: ProductType;
-  onAddToCart?: (product: ProductType) => void;
   showActions?: boolean;
 };
 
-const ProductCard = ({ product, onAddToCart, showActions = true }: ProductCardProps) => {
+const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
+  const { addToCart } = useCart();
+  const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>(
+    product.flavors && product.flavors.length > 0 ? product.flavors[0] : undefined
+  );
+
   const handleAddToCart = () => {
-    if (onAddToCart) {
-      onAddToCart(product);
-    }
+    addToCart(product, 1, selectedFlavor);
   };
 
   return (
@@ -37,15 +43,38 @@ const ProductCard = ({ product, onAddToCart, showActions = true }: ProductCardPr
         <p className="text-lg font-semibold text-terracotta">R{product.price.toFixed(2)}</p>
         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{product.description}</p>
       </CardContent>
-      {showActions && (
-        <CardFooter>
+      {showActions && product.available && (
+        <CardFooter className="flex flex-col gap-2">
+          {product.flavors && product.flavors.length > 0 && (
+            <Select
+              value={selectedFlavor}
+              onValueChange={setSelectedFlavor}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select flavor" />
+              </SelectTrigger>
+              <SelectContent>
+                {product.flavors.map((flavor) => (
+                  <SelectItem key={flavor} value={flavor}>
+                    {flavor}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button 
             variant="default" 
             className="w-full bg-terracotta hover:bg-terracotta/90"
             onClick={handleAddToCart}
           >
-            Add to Order
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Add to Cart
           </Button>
+        </CardFooter>
+      )}
+      {!product.available && (
+        <CardFooter>
+          <p className="w-full text-center text-muted-foreground">Currently unavailable</p>
         </CardFooter>
       )}
     </Card>
