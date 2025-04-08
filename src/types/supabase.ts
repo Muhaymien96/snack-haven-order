@@ -1,6 +1,5 @@
 
-// This is a placeholder type for the Supabase database
-// This should be updated with your actual database schema once you've set it up in Supabase
+// This is the Supabase database schema
 export type Database = {
   public: {
     Tables: {
