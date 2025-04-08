@@ -8,16 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { MessageSquare, Send } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import type { ContactFormType } from '@/types';
 
 const Contact = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactFormType>({
     name: '',
     company: '',
     email: '',
     mobileNumber: '',
     message: '',
-    type: 'query' as 'query' | 'partnership',
+    type: 'query',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -34,25 +36,33 @@ const Contact = () => {
     setIsLoading(true);
 
     try {
-      // Here we would integrate with Supabase to store the contact form
-      console.log('Submitting contact form:', formData);
-      
-      // Simulate API call
-      setTimeout(() => {
-        toast.success('Your message has been sent! We will get back to you soon.');
-        setFormData({
-          name: '',
-          company: '',
-          email: '',
-          mobileNumber: '',
-          message: '',
-          type: 'query',
+      // Insert into Supabase contact_forms table
+      const { data, error } = await supabase
+        .from('contact_forms')
+        .insert({
+          name: formData.name,
+          company: formData.company || null,
+          email: formData.email,
+          mobile_number: formData.mobileNumber,
+          message: formData.message,
+          type: formData.type
         });
-        setIsLoading(false);
-      }, 1500);
+      
+      if (error) throw error;
+      
+      toast.success('Your message has been sent! We will get back to you soon.');
+      setFormData({
+        name: '',
+        company: '',
+        email: '',
+        mobileNumber: '',
+        message: '',
+        type: 'query',
+      });
     } catch (error) {
       console.error('Contact form submission error:', error);
       toast.error('Failed to send your message. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };

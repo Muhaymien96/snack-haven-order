@@ -6,12 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ProductCard from '@/components/ProductCard';
 import { products } from '@/data/products';
+import { signOut } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const Landing = () => {
   // This would log out any user on the landing page
   useEffect(() => {
-    // Here, we would call a logout function from auth context
-    console.log('Logging out any existing user');
+    const performLogout = async () => {
+      const { error } = await signOut();
+      if (error) {
+        console.error('Error logging out:', error);
+      } else {
+        console.log('User logged out successfully');
+      }
+    };
+    
+    performLogout();
   }, []);
 
   return (
