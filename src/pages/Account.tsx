@@ -15,6 +15,16 @@ type ProfileType = {
   mobile_number: string;
 };
 
+// Type for the raw database response
+type ProfileResponse = {
+  id: string;
+  name: string | null;
+  surname: string | null;
+  block_number: number | null;
+  unit_number: number | null;
+  mobile: string | null; // Note: the database column is 'mobile' not 'mobile_number'
+};
+
 const Account = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +50,17 @@ const Account = () => {
           throw error;
         }
 
-        setProfile(data);
+        // Convert the database response to our ProfileType format
+        if (data) {
+          const profileData: ProfileType = {
+            name: data.name || '',
+            surname: data.surname || '',
+            block_number: data.block_number || 0,
+            unit_number: data.unit_number || 0,
+            mobile_number: data.mobile || '', // Map 'mobile' from DB to 'mobile_number' in our type
+          };
+          setProfile(profileData);
+        }
       } catch (error: any) {
         console.error('Error fetching profile:', error);
         toast.error('Failed to load profile information');
