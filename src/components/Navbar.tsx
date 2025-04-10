@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag, User, Cake } from 'lucide-react';
@@ -7,14 +8,19 @@ import { useAuth } from '@/contexts/AuthContext';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
-  const toggleMenu = () => setIsOpen(!isOpen);
-  const closeMenu = () => setIsOpen(false);
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
 
-  const isActive = (path: string) => location.pathname === path;
+  const closeMenu = () => {
+    setIsOpen(false);
+  };
 
-  const profileLink = isAdmin ? '/admin' : '/account';
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   return (
     <nav className="bg-cream shadow-sm">
@@ -24,14 +30,14 @@ const Navbar = () => {
             <Cake size={28} />
             <span>Thaneya's Treats</span>
           </Link>
-
+          
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
+            <Button 
+              variant="ghost" 
+              size="icon" 
               onClick={toggleMenu}
-              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              aria-label={isOpen ? "Close menu" : "Open menu"}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </Button>
@@ -39,20 +45,20 @@ const Navbar = () => {
 
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/"
+            <Link 
+              to="/" 
               className={`text-amber-800 hover:text-amber-600 transition-colors ${isActive('/') ? 'font-medium' : ''}`}
             >
               Home
             </Link>
-            <Link
-              to="/products"
+            <Link 
+              to="/products" 
               className={`text-amber-800 hover:text-amber-600 transition-colors ${isActive('/products') ? 'font-medium' : ''}`}
             >
               Products
             </Link>
-            <Link
-              to="/contact"
+            <Link 
+              to="/contact" 
               className={`text-amber-800 hover:text-amber-600 transition-colors ${isActive('/contact') ? 'font-medium' : ''}`}
             >
               Contact
@@ -63,14 +69,14 @@ const Navbar = () => {
               </Button>
             </Link>
             {user ? (
-              <Link to={profileLink}>
+              <Link to="/account">
                 <Button variant="ghost" size="icon" aria-label="Account">
                   <User size={24} className="text-amber-800" />
                 </Button>
               </Link>
             ) : (
-              <Link
-                to="/login"
+              <Link 
+                to="/login" 
                 className={`text-amber-800 hover:text-amber-600 transition-colors ${isActive('/login') ? 'font-medium' : ''}`}
               >
                 Login
@@ -84,38 +90,38 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-cream shadow-lg absolute top-16 inset-x-0 z-50">
           <div className="container-custom py-4 flex flex-col space-y-4">
-            <Link
-              to="/"
+            <Link 
+              to="/" 
               className={`text-amber-800 hover:text-amber-600 transition-colors py-2 ${isActive('/') ? 'font-medium' : ''}`}
               onClick={closeMenu}
             >
               Home
             </Link>
-            <Link
-              to="/products"
+            <Link 
+              to="/products" 
               className={`text-amber-800 hover:text-amber-600 transition-colors py-2 ${isActive('/products') ? 'font-medium' : ''}`}
               onClick={closeMenu}
             >
               Products
             </Link>
-            <Link
-              to="/contact"
+            <Link 
+              to="/contact" 
               className={`text-amber-800 hover:text-amber-600 transition-colors py-2 ${isActive('/contact') ? 'font-medium' : ''}`}
               onClick={closeMenu}
             >
               Contact
             </Link>
             {user ? (
-              <Link
-                to={profileLink}
-                className={`text-amber-800 hover:text-amber-600 transition-colors py-2 ${isActive(profileLink) ? 'font-medium' : ''}`}
+              <Link 
+                to="/account" 
+                className={`text-amber-800 hover:text-amber-600 transition-colors py-2 ${isActive('/account') ? 'font-medium' : ''}`}
                 onClick={closeMenu}
               >
-                {isAdmin ? 'Admin Dashboard' : 'My Account'}
+                My Account
               </Link>
             ) : (
-              <Link
-                to="/login"
+              <Link 
+                to="/login" 
                 className={`text-amber-800 hover:text-amber-600 transition-colors py-2 ${isActive('/login') ? 'font-medium' : ''}`}
                 onClick={closeMenu}
               >

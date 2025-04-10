@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,6 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  isAdmin: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -16,56 +16,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const fetchSessionAndAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Get the initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      const user = session?.user ?? null;
-      setUser(user);
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('mobile')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.mobile === '0662538342') {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
-      }
-
+      setUser(session?.user ?? null);
       setLoading(false);
-    };
+    });
 
-    fetchSessionAndAdmin();
-
+    // Set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         setSession(session);
-        const user = session?.user ?? null;
-        setUser(user);
-
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('mobile')
-            .eq('id', user.id)
-            .single();
-
-          if (profile?.mobile === '0662538342') {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-        } else {
-          setIsAdmin(false);
-        }
-
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
@@ -77,13 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, isAdmin, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
