@@ -74,45 +74,54 @@ export const createOrder = async (orderData: {
   }>;
   total: number;
 }) => {
-  // Create the order first
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      user_id: orderData.user_id,
-      order_date: new Date().toISOString(),
-      delivery_date: orderData.delivery_date,
-      status: 'pending',
-      total: orderData.total,
-      is_special_order: orderData.is_special_order,
-      special_instructions: orderData.special_instructions,
-    })
-    .select()
-    .single();
+  try {
+    // Insert the main order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: orderData.user_id,
+        order_date: new Date().toISOString(),
+        delivery_date: orderData.delivery_date,
+        status: 'pending',
+        total: orderData.total,
+        is_special_order: orderData.is_special_order,
+        special_instructions: orderData.special_instructions,
+      })
+      .select()
+      .single();
 
-  if (orderError || !order) {
-    return { data: null, error: orderError };
+    if (orderError || !order) {
+      console.error("Error inserting order:", orderError);
+      return { data: null, error: orderError };
+    }
+
+    // Prepare order items
+    const orderItems = orderData.items.map((item) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      quantity: item.quantity,
+      flavor: item.flavor,
+      price: item.price,
+    }));
+
+    // Insert order items
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error("Error inserting order items:", itemsError);
+      return { data: null, error: itemsError };
+    }
+
+    return { data: order, error: null };
+  } catch (e: any) {
+    console.error("Unexpected error:", e);
+    return { data: null, error: { message: e.message } };
   }
-
-  // Then create order items
-  const orderItems = orderData.items.map(item => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    product_name: item.product_name,
-    quantity: item.quantity,
-    flavor: item.flavor,
-    price: item.price,
-  }));
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
-  if (itemsError) {
-    return { data: null, error: itemsError };
-  }
-
-  return { data: order, error: null };
 };
+
 
 export const submitContactForm = async (formData: {
   name: string;
