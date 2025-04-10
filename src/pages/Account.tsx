@@ -15,16 +15,6 @@ type ProfileType = {
   mobile_number: string;
 };
 
-// Type for the raw database response
-type ProfileResponse = {
-  id: string;
-  name: string | null;
-  surname: string | null;
-  block_number: number | null;
-  unit_number: number | null;
-  mobile: string | null; // Note: the database column is 'mobile' not 'mobile_number'
-};
-
 const Account = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -39,9 +29,8 @@ const Account = () => {
 
     const fetchProfile = async () => {
       try {
-        // Use the any type to bypass the TypeScript error until Supabase types are updated
         const { data, error } = await supabase
-          .from('profiles' as any)
+          .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
@@ -52,13 +41,12 @@ const Account = () => {
 
         // Convert the database response to our ProfileType format
         if (data) {
-          const profileData = data as ProfileResponse;
           setProfile({
-            name: profileData.name || '',
-            surname: profileData.surname || '',
-            block_number: profileData.block_number || 0,
-            unit_number: profileData.unit_number || 0,
-            mobile_number: profileData.mobile || '', // Map 'mobile' from DB to 'mobile_number' in our type
+            name: data.name || '',
+            surname: data.surname || '',
+            block_number: data.block_number || 0,
+            unit_number: data.unit_number || 0,
+            mobile_number: data.mobile || '', // Map 'mobile' from DB to 'mobile_number' in our type
           });
         }
       } catch (error: any) {
