@@ -57,7 +57,15 @@ const Register = () => {
         throw error;
       }
 
+      // Check if this is the admin user by mobile number
+      const isAdmin = formData.mobileNumber === '0662538342';
+      
       toast.success('Registration successful! You can now log in.');
+      
+      if (isAdmin) {
+        toast.success('Admin account created. You will be redirected to the admin dashboard after login.');
+      }
+      
       navigate('/login');
     } catch (error: any) {
       console.error('Registration error:', error);

@@ -7,6 +7,7 @@ export type UserType = {
   unitNumber: number;
   mobileNumber: string;
   createdAt: string;
+  isAdmin?: boolean;
 };
 
 export type ProductType = {
