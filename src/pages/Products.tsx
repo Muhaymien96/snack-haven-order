@@ -8,11 +8,14 @@ import { Search, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { Link } from 'react-router-dom';
+import OrderTypeSelector from '@/components/OrderTypeSelector';
+import { useOrder } from '@/contexts/OrderContext';
 
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { cartCount } = useCart();
+  const { deliveryDate } = useOrder();
 
   const categories = [...new Set(products.map(product => product.category))];
   
@@ -41,6 +44,9 @@ const Products = () => {
           </Button>
         </Link>
       </div>
+      
+      {/* Order Type Selector */}
+      <OrderTypeSelector />
       
       {/* Search and filter */}
       <div className="mb-8 space-y-4">
@@ -75,6 +81,17 @@ const Products = () => {
           ))}
         </div>
       </div>
+      
+      {/* Proceed to checkout button if items in cart and delivery date selected */}
+      {cartCount > 0 && deliveryDate && (
+        <div className="mb-8">
+          <Link to="/checkout">
+            <Button className="w-full bg-terracotta hover:bg-terracotta/90">
+              Proceed to Checkout
+            </Button>
+          </Link>
+        </div>
+      )}
       
       {/* Products grid */}
       {filteredProducts.length > 0 ? (

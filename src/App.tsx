@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { useState } from "react";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { OrderProvider } from "./contexts/OrderContext";
 
 const App = () => {
   // Create a client inside the function component
@@ -30,29 +31,31 @@ const App = () => {
       <TooltipProvider>
         <AuthProvider>
           <CartProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="flex flex-col min-h-screen">
-                <Navbar />
-                <main className="flex-grow">
-                  <Routes>
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/index" element={<Index />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/account" element={<Account />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-                <Footer />
-              </div>
-            </BrowserRouter>
+            <OrderProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <div className="flex flex-col min-h-screen">
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Routes>
+                      <Route path="/" element={<Landing />} />
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/index" element={<Index />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/account" element={<Account />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/admin" element={<AdminDashboard />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                  <Footer />
+                </div>
+              </BrowserRouter>
+            </OrderProvider>
           </CartProvider>
         </AuthProvider>
       </TooltipProvider>

@@ -4,10 +4,6 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useForm } from 'react-hook-form';
 import { createOrder, getCurrentUser } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -22,14 +18,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
 import { Check, ShoppingCart, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useOrder } from '@/contexts/OrderContext';
 
 const formSchema = z.object({
-  deliveryDate: z
-    .string()
-    .min(1, { message: 'Please select a delivery date' }),
-  isSpecialOrder: z.boolean().default(false),
   specialInstructions: z.string().optional(),
 });
 
@@ -37,6 +31,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Checkout = () => {
   const { cartItems, cartTotal, clearCart, cartCount } = useCart();
+  const { isSpecialOrder, deliveryDate } = useOrder();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -45,8 +40,6 @@ const Checkout = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      deliveryDate: '',
-      isSpecialOrder: false,
       specialInstructions: '',
     },
   });
@@ -64,13 +57,6 @@ const Checkout = () => {
 
     checkAuth();
   }, []);
-
-  // Get tomorrow's date formatted as YYYY-MM-DD
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
 
   const onSubmit = async (values: FormValues) => {
     if (!isAuthenticated) {
@@ -92,13 +78,22 @@ const Checkout = () => {
       return;
     }
 
+    if (!deliveryDate) {
+      toast({
+        title: "Delivery date required",
+        description: "Please select a delivery date for your order.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const orderData = {
         user_id: userId!,
-        delivery_date: values.deliveryDate,
-        is_special_order: values.isSpecialOrder,
+        delivery_date: deliveryDate,
+        is_special_order: isSpecialOrder,
         special_instructions: values.specialInstructions,
         total: cartTotal,
         items: cartItems.map(item => ({
@@ -184,6 +179,26 @@ const Checkout = () => {
     );
   }
 
+  if (!deliveryDate) {
+    return (
+      <div className="container-custom py-12">
+        <h1 className="text-3xl font-bold text-earth mb-8">Checkout</h1>
+        <div className="text-center py-12 bg-card rounded-lg border shadow-sm">
+          <AlertCircle className="mx-auto h-16 w-16 text-terracotta mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Delivery Date Required</h2>
+          <p className="text-muted-foreground mb-6 mx-auto max-w-md">
+            Please select a delivery date for your order on the products page.
+          </p>
+          <Link to="/products">
+            <Button className="bg-terracotta hover:bg-terracotta/90">
+              Go to Products
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-custom py-12">
       <h1 className="text-3xl font-bold text-earth mb-8">Checkout</h1>
@@ -195,46 +210,26 @@ const Checkout = () => {
               <div className="bg-card rounded-lg border shadow-sm p-6">
                 <h2 className="text-xl font-semibold mb-4">Delivery Information</h2>
                 
-                <FormField
-                  control={form.control}
-                  name="deliveryDate"
-                  render={({ field }) => (
-                    <FormItem className="mb-4">
-                      <FormLabel>Delivery Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          min={getTomorrowDate()}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="mb-4">
+                  <h3 className="font-medium">Order Type</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isSpecialOrder ? 'Special Order' : 'Regular Sunday Order'}
+                  </p>
+                </div>
                 
-                <FormField
-                  control={form.control}
-                  name="isSpecialOrder"
-                  render={({ field }) => (
-                    <FormItem className="mb-4">
-                      <div className="flex items-center space-x-2">
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="h-4 w-4 text-terracotta focus:ring-terracotta"
-                          />
-                        </FormControl>
-                        <FormLabel className="cursor-pointer">This is a special order</FormLabel>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="mb-4">
+                  <h3 className="font-medium">Delivery Date</h3>
+                  <p className="text-sm">
+                    {new Date(deliveryDate).toLocaleDateString('en-ZA', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                </div>
                 
-                {form.watch('isSpecialOrder') && (
+                {isSpecialOrder && (
                   <FormField
                     control={form.control}
                     name="specialInstructions"
