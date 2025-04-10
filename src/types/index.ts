@@ -19,6 +19,7 @@ export type ProductType = {
   category: string;
   flavors?: string[];
   available: boolean;
+  image_url?: string;
 };
 
 export type OrderType = {

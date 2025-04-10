@@ -62,7 +62,7 @@ const Contact = () => {
       });
     } catch (error) {
       console.error('Contact form submission error:', error);
-      toast.error('Failed to send your message. Please try again.');
+      toast.error(error.message ||'Failed to send your message. Please try again.');
     } finally {
       setIsLoading(false);
     }
