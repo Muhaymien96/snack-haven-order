@@ -29,8 +29,9 @@ const Account = () => {
 
     const fetchProfile = async () => {
       try {
+        // Use the any type to bypass the TypeScript error until Supabase types are updated
         const { data, error } = await supabase
-          .from('profiles')
+          .from('profiles' as any)
           .select('*')
           .eq('id', user.id)
           .single();

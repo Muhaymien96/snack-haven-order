@@ -9,33 +9,111 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      orders: {
         Row: {
-          block_number: number
-          created_at: string
+          date: string | null
+          flavour: string | null
           id: string
-          mobile_number: string
-          name: string
-          surname: string
-          unit_number: number
+          quantity: number | null
+          status: string | null
+          type: string | null
+          user_id: string | null
         }
         Insert: {
-          block_number: number
-          created_at?: string
-          id: string
-          mobile_number: string
-          name: string
-          surname: string
-          unit_number: number
+          date?: string | null
+          flavour?: string | null
+          id?: string
+          quantity?: number | null
+          status?: string | null
+          type?: string | null
+          user_id?: string | null
         }
         Update: {
-          block_number?: number
-          created_at?: string
+          date?: string | null
+          flavour?: string | null
           id?: string
-          mobile_number?: string
-          name?: string
-          surname?: string
-          unit_number?: number
+          quantity?: number | null
+          status?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      partnership_requests: {
+        Row: {
+          business_name: string | null
+          contact_name: string | null
+          created_at: string | null
+          id: string
+          message: string | null
+          mobile: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          mobile?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          mobile?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          flavours: string[] | null
+          id: string
+          name: string | null
+          price: number | null
+          type: string | null
+        }
+        Insert: {
+          flavours?: string[] | null
+          id?: string
+          name?: string | null
+          price?: number | null
+          type?: string | null
+        }
+        Update: {
+          flavours?: string[] | null
+          id?: string
+          name?: string | null
+          price?: number | null
+          type?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          block_number: number | null
+          id: string
+          mobile: string | null
+          name: string | null
+          surname: string | null
+          unit_number: number | null
+        }
+        Insert: {
+          block_number?: number | null
+          id: string
+          mobile?: string | null
+          name?: string | null
+          surname?: string | null
+          unit_number?: number | null
+        }
+        Update: {
+          block_number?: number | null
+          id?: string
+          mobile?: string | null
+          name?: string | null
+          surname?: string | null
+          unit_number?: number | null
         }
         Relationships: []
       }
