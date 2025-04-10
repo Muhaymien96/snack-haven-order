@@ -52,14 +52,14 @@ const Account = () => {
 
         // Convert the database response to our ProfileType format
         if (data) {
-          const profileData: ProfileType = {
-            name: data.name || '',
-            surname: data.surname || '',
-            block_number: data.block_number || 0,
-            unit_number: data.unit_number || 0,
-            mobile_number: data.mobile || '', // Map 'mobile' from DB to 'mobile_number' in our type
-          };
-          setProfile(profileData);
+          const profileData = data as ProfileResponse;
+          setProfile({
+            name: profileData.name || '',
+            surname: profileData.surname || '',
+            block_number: profileData.block_number || 0,
+            unit_number: profileData.unit_number || 0,
+            mobile_number: profileData.mobile || '', // Map 'mobile' from DB to 'mobile_number' in our type
+          });
         }
       } catch (error: any) {
         console.error('Error fetching profile:', error);
