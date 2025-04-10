@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Cake } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -40,7 +41,14 @@ const Index = () => {
   }, [user, loading, navigate]);
 
   // Return a loading state while checking
-  return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <Cake size={48} className="text-amber-800 mx-auto mb-4" />
+        <p className="text-lg text-amber-800">Loading Thaneya's Treats...</p>
+      </div>
+    </div>
+  );
 };
 
 export default Index;

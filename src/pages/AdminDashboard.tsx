@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Cake } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -119,9 +120,12 @@ const AdminDashboard = () => {
     <div className="container-custom py-12">
       <div className="max-w-6xl mx-auto">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Admin Dashboard</CardTitle>
-            <CardDescription className="text-center">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Cake size={48} className="text-amber-800" />
+            </div>
+            <CardTitle className="text-2xl text-amber-800">Thaneya's Treats Admin Dashboard</CardTitle>
+            <CardDescription>
               Manage orders and products
             </CardDescription>
           </CardHeader>
@@ -214,7 +218,10 @@ const AdminDashboard = () => {
                       </ul>
                       <div className="mt-4">
                         <p className="text-sm text-muted-foreground">
-                          Contact Info: 0722277345 (WhatsApp)
+                          Contact Info: 072 227 7345 (WhatsApp)
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Email: t.dollie982@gmail.com
                         </p>
                       </div>
                     </CardContent>

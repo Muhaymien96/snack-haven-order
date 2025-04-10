@@ -16,6 +16,7 @@ import Index from "./pages/Index";
 import Cart from "./pages/Cart";
 import Account from "./pages/Account";
 import Checkout from "./pages/Checkout";
+import AdminDashboard from "./pages/AdminDashboard";
 import { useState } from "react";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -45,6 +46,7 @@ const App = () => {
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/account" element={<Account />} />
                     <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

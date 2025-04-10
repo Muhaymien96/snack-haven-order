@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { MessageSquare, Send } from 'lucide-react';
+import { MessageSquare, Send, Cake } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { ContactFormType } from '@/types';
 
@@ -45,7 +45,8 @@ const Contact = () => {
           email: formData.email,
           mobile_number: formData.mobileNumber,
           message: formData.message,
-          type: formData.type
+          type: formData.type,
+          recipient_email: 't.dollie982@gmail.com' // Store the recipient email
         });
       
       if (error) throw error;
@@ -69,7 +70,12 @@ const Contact = () => {
 
   return (
     <div className="container-custom py-12">
-      <h1 className="text-3xl font-bold text-earth mb-8 text-center">Contact Us</h1>
+      <div className="flex justify-center mb-8">
+        <div className="flex flex-col items-center">
+          <Cake size={48} className="text-amber-800 mb-2" />
+          <h1 className="text-3xl font-bold text-amber-800 text-center">Contact Thaneya's Treats</h1>
+        </div>
+      </div>
       
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         <div>
@@ -81,18 +87,18 @@ const Contact = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center p-4 bg-sage/10 rounded-lg">
-                <MessageSquare className="h-6 w-6 text-sage mr-3" />
+              <div className="flex items-center p-4 bg-amber-100 rounded-lg">
+                <MessageSquare className="h-6 w-6 text-amber-800 mr-3" />
                 <div>
                   <h3 className="font-medium">WhatsApp Support</h3>
                   <p className="text-sm text-muted-foreground">
                     Message us directly on WhatsApp for quick assistance
                   </p>
                   <a 
-                    href="https://wa.me/27123456789" 
+                    href="https://wa.me/27722277345" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="mt-2 inline-block text-terracotta hover:underline"
+                    className="mt-2 inline-block text-amber-800 hover:underline"
                   >
                     Open WhatsApp Chat
                   </a>
@@ -202,7 +208,7 @@ const Contact = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-terracotta hover:bg-terracotta/90" 
+                  className="w-full bg-amber-800 hover:bg-amber-700" 
                   disabled={isLoading}
                 >
                   {isLoading ? 'Sending...' : (
