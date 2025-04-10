@@ -4,7 +4,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -18,9 +18,8 @@ type ProductCardProps = {
 const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
   const { addToCart } = useCart();
 
-  // 🛠️ Parse comma-separated or JSON stored flavours
-  const parsedFlavours = Array.isArray(product.flavors)
-    ? product.flavors.map(f => f.trim()).filter(Boolean)
+  const parsedFlavours = Array.isArray(product.flavours)
+    ? product.flavours.map(f => f.trim()).filter(Boolean)
     : [];
 
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>(
@@ -40,8 +39,8 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
     <Card className="h-full flex flex-col overflow-hidden hover:shadow-md transition-shadow duration-300">
       <div className="aspect-square overflow-hidden bg-muted">
         <img
-          src={product.image_url || 'https://chefadora.b-cdn.net/medium_IMG_20240924_WA_0000_0b5525845d.jpg'}
-          alt={product.name}
+          src={product.image_url || '/placeholder.svg'}
+          alt={product.name || 'Product'}
           className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
         />
       </div>
@@ -56,13 +55,12 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
       </CardHeader>
 
       <CardContent>
-        <p className="text-lg font-semibold text-terracotta">R{product.price.toFixed(2)}</p>
-        {product.description && (
-          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{product.description}</p>
-        )}
+        <p className="text-lg font-semibold text-terracotta">
+          R{(product.price ?? 0).toFixed(2)}
+        </p>
       </CardContent>
 
-      {showActions && product.available !== false && (
+      {showActions && (
         <CardFooter className="flex flex-col gap-2">
           {parsedFlavours.length > 0 && (
             <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
@@ -97,12 +95,6 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
             <ShoppingCart className="mr-2 h-4 w-4" />
             Add to Cart
           </Button>
-        </CardFooter>
-      )}
-
-      {product.available === false && (
-        <CardFooter>
-          <p className="w-full text-center text-muted-foreground">Currently unavailable</p>
         </CardFooter>
       )}
     </Card>

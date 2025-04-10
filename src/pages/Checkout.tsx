@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { sendAdminSmsNotification } from '@/lib/twilio';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';

@@ -1,123 +1,74 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import ProductCard from '@/components/ProductCard';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Search, ShoppingCart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useCart } from '@/contexts/CartContext';
-import { Link } from 'react-router-dom';
-import OrderTypeSelector from '@/components/OrderTypeSelector';
-import { useOrder } from '@/contexts/OrderContext';
+import { Input } from '@/components/ui/input';  // search input
+// ... other imports (if any)
 
 const Products = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { cartCount } = useCart();
-  const { deliveryDate } = useOrder();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*');
-      if (error) console.error('Error fetching products:', error);
-      else setProducts(data || []);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.from('products').select('*');
+        if (error) throw error;
+        setProducts(data || []);
+      } catch (error: any) {
+        console.error('Error fetching products:', error);
+        // Optionally show a toast or alert for error
+      } finally {
+        setLoading(false);
+      }
     };
     fetchProducts();
   }, []);
 
-  const categories = [...new Set(products.map(product => product.type))];
-
+  const categories = [...new Set(products.map(product => product.category))];
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.flavours?.toLowerCase?.().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory ? product.type === selectedCategory : true;
-    return matchesSearch && matchesCategory;
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    // If needed, add additional filtering logic
+    return matchesSearch;
   });
 
+  if (loading) {
+    return <p className="text-center py-10">Loading products...</p>;
+  }
+
   return (
-    <div className="container-custom py-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-earth">Our Products</h1>
-          <p className="text-muted-foreground mt-1">Handcrafted with love in Gordons Bay, Cape Town</p>
-        </div>
-
-        <Link to="/cart">
-          <Button variant="outline" className="mt-4 md:mt-0 relative">
-            <ShoppingCart className="h-5 w-5 mr-2" />
-            View Cart
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-terracotta text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Button>
-        </Link>
+    <div className="container-custom py-8">
+      <h2 className="text-2xl font-bold mb-6 text-center">Products</h2>
+      {/* Search input */}
+      <div className="max-w-sm mx-auto mb-6">
+        <Input 
+          type="text"
+          placeholder="Search products..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
       </div>
-
-      <OrderTypeSelector />
-
-      <div className="mb-8 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={selectedCategory === null ? 'default' : 'outline'}
-            className={`cursor-pointer ${selectedCategory === null ? 'bg-terracotta hover:bg-terracotta/90' : ''}`}
-            onClick={() => setSelectedCategory(null)}
-          >
-            All
-          </Badge>
-
-          {categories.map(category => (
-            <Badge
-              key={category}
-              variant={selectedCategory === category ? 'default' : 'outline'}
-              className={`cursor-pointer ${selectedCategory === category ? 'bg-terracotta hover:bg-terracotta/90' : ''}`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </Badge>
+      {/* Product categories filter (if needed) */}
+      {categories.length > 1 && (
+        <div className="flex justify-center space-x-4 mb-8">
+          {categories.map(cat => (
+            <button 
+              key={cat} 
+              onClick={() => {/* handle category filter if implemented */}} 
+              className="text-sm px-3 py-1 rounded border">
+              {cat}
+            </button>
           ))}
-        </div>
-      </div>
-
-      {cartCount > 0 && deliveryDate && (
-        <div className="mb-8">
-          <Link to="/checkout">
-            <Button className="w-full bg-terracotta hover:bg-terracotta/90">
-              Proceed to Checkout
-            </Button>
-          </Link>
         </div>
       )}
-
-      {loading ? (
-        <div className="text-center py-12">Loading products...</div>
-      ) : filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map(product => (
-            <ProductCard
-              key={product.id}
-              product={product}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground">No products found matching your criteria.</p>
-        </div>
+      {/* Products grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProducts.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+      {filteredProducts.length === 0 && (
+        <p className="text-center text-muted-foreground mt-4">No products found.</p>
       )}
     </div>
   );

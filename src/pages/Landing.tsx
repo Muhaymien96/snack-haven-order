@@ -4,7 +4,7 @@ import { ArrowRight, ShoppingBag, Calendar, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ProductCard from '@/components/ProductCard';
-import { signOut, supabase, getCurrentUser } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ProductType } from '@/types';
 
@@ -14,7 +14,7 @@ const Landing = () => {
 
   useEffect(() => {
     const performLogout = async () => {
-      const { error } = await signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error logging out:', error);
       } else {
@@ -23,7 +23,11 @@ const Landing = () => {
     };
 
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').limit(4);
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, type, flavours, image_url')
+        .limit(4);
+
       if (error) {
         console.error('Failed to load products:', error);
         toast.error('Failed to load products');
@@ -33,8 +37,10 @@ const Landing = () => {
     };
 
     const checkUser = async () => {
-      const { user } = await getCurrentUser();
-      setIsAuthenticated(!!user);
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user) {
+        setIsAuthenticated(true);
+      }
     };
 
     performLogout();

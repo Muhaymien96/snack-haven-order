@@ -1,7 +1,13 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,7 +36,6 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate form
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       setIsLoading(false);
@@ -38,9 +43,10 @@ const Register = () => {
     }
 
     try {
-      // Register user with Supabase
+      const email = `${formData.mobileNumber}@ttreats.co.za`; // Updated domain
+
       const { data, error } = await supabase.auth.signUp({
-        email: `${formData.mobileNumber}@user.snackhaven.co.za`, // Using mobile as unique identifier
+        email,
         password: formData.password,
         options: {
           data: {
@@ -48,24 +54,35 @@ const Register = () => {
             surname: formData.surname,
             block_number: parseInt(formData.blockNumber),
             unit_number: parseInt(formData.unitNumber),
-            mobile_number: formData.mobileNumber,
+            mobile: formData.mobileNumber,
           },
         },
       });
 
-      if (error) {
-        throw error;
+      if (error || !data.user) {
+        throw error || new Error('User creation failed');
       }
 
-      // Check if this is the admin user by mobile number
+      const userId = data.user.id;
       const isAdmin = formData.mobileNumber === '0662538342';
-      
+
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: userId,
+        name: formData.name,
+        surname: formData.surname,
+        block_number: parseInt(formData.blockNumber),
+        unit_number: parseInt(formData.unitNumber),
+        mobile: formData.mobileNumber,
+        role: isAdmin ? 'admin' : 'user',
+      });
+
+      if (profileError) throw profileError;
+
       toast.success('Registration successful! You can now log in.');
-      
       if (isAdmin) {
         toast.success('Admin account created. You will be redirected to the admin dashboard after login.');
       }
-      
+
       navigate('/login');
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -111,7 +128,7 @@ const Register = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="blockNumber">Block Number</Label>
@@ -138,19 +155,19 @@ const Register = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="mobileNumber">Mobile Number</Label>
                 <Input
                   id="mobileNumber"
                   name="mobileNumber"
-                  placeholder="073 123 4567"
+                  placeholder="0731234567"
                   required
                   value={formData.mobileNumber}
                   onChange={handleChange}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -162,7 +179,7 @@ const Register = () => {
                   onChange={handleChange}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
@@ -174,10 +191,10 @@ const Register = () => {
                   onChange={handleChange}
                 />
               </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-terracotta hover:bg-terracotta/90" 
+
+              <Button
+                type="submit"
+                className="w-full bg-terracotta hover:bg-terracotta/90"
                 disabled={isLoading}
               >
                 {isLoading ? 'Creating account...' : 'Create account'}

@@ -6,7 +6,7 @@ import { Minus, Plus, Trash, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { ProductType } from '@/types';
 
 const CartItem = ({ item }: { item: CartItemType }) => {
@@ -16,18 +16,17 @@ const CartItem = ({ item }: { item: CartItemType }) => {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center py-4 border-b">
       <div className="w-full sm:w-20 h-20 mr-4 mb-4 sm:mb-0 overflow-hidden rounded-md bg-muted">
+        {/* Placeholder image only */}
         <img 
-          src={product.image || '/placeholder.svg'} 
+          src={'/placeholder.svg'} 
           alt={product.name || 'Product'} 
           className="w-full h-full object-cover"
         />
       </div>
       <div className="flex-grow mr-4">
         <h3 className="font-medium">{product.name}</h3>
-        <p className="text-sm text-muted-foreground">
-          {product.description ? `${product.description.substring(0, 60)}...` : 'No description available.'}
-        </p>
-        {product.flavors && product.flavors.length > 0 && (
+        {/* No description available in type */}
+        {product.flavours && product.flavours.length > 0 && (
           <div className="mt-2">
             <Select
               value={flavor}
@@ -37,7 +36,7 @@ const CartItem = ({ item }: { item: CartItemType }) => {
                 <SelectValue placeholder="Select flavor" />
               </SelectTrigger>
               <SelectContent>
-                {product.flavors.map((f) => (
+                {product.flavours.map((f) => (
                   <SelectItem key={f} value={f}>
                     {f}
                   </SelectItem>
@@ -66,7 +65,7 @@ const CartItem = ({ item }: { item: CartItemType }) => {
         </Button>
       </div>
       <div className="flex items-center mt-4 sm:mt-0 ml-0 sm:ml-6">
-        <p className="font-medium mr-4">R{(product.price * quantity).toFixed(2)}</p>
+        <p className="font-medium mr-4">R{(product.price ?? 0 * quantity).toFixed(2)}</p>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -86,10 +85,17 @@ const Cart = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*');
-      if (error) console.error('Error fetching products:', error);
-      else setProductsData(data);
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, type, flavours'); // ✅ Correct spelling
+    
+      if (error) {
+        console.error('Error fetching products:', error);
+      } else {
+        setProductsData(data as ProductType[]);
+      }
     };
+
     fetchProducts();
   }, []);
 

@@ -1,12 +1,39 @@
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
 
-// These are public keys - safe to expose in client-side code
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-// Create a single supabase client for the entire app
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+import { supabase } from '../integrations/supabase/client';
 
+// Extend Supabase type definitions to include 'order_items'
+type OrderItemsTable = {
+  Row: {
+    id: string;
+    order_id: string;
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    flavor?: string;
+    price: number;
+  };
+  Insert: {
+    id?: string;
+    order_id: string;
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    flavor?: string;
+    price: number;
+  };
+  Update: Partial<OrderItemsTable['Insert']>;
+};
+
+// Extend Supabase client with the new table
+declare module '../integrations/supabase/client' {
+  interface Database {
+    public: {
+      Tables: {
+        order_items: OrderItemsTable;
+      };
+    };
+  }
+}
 // Auth helpers
 export const signUp = async (
   name: string,
@@ -17,7 +44,7 @@ export const signUp = async (
   password: string
 ) => {
   const { data, error } = await supabase.auth.signUp({
-    email: `${mobileNumber}@user.snackhaven.co.za`, // Using mobile as unique identifier
+    email: `${mobileNumber}@ttreats.co.za`, // Using mobile as unique identifier
     password,
     options: {
       data: {
@@ -35,7 +62,7 @@ export const signUp = async (
 
 export const signIn = async (mobileNumber: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: `${mobileNumber}@user.snackhaven.co.za`,
+    email: `${mobileNumber}@ttreats.co.za`,
     password,
   });
   
