@@ -33,9 +33,9 @@ const Account = () => {
         const [{ data: profileData, error: profileErr }, { data: ordersData, error: ordersErr }] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
           supabase.from('orders')
-            .select(`id, date, status, order_items(quantity, products(name))`)
+            .select(`id, order_date, status, order_items(quantity, products(name))`)
             .eq('user_id', user.id)
-            .order('date', { ascending: false })
+            .order('order_date', { ascending: false })
         ]);
         if (profileErr) throw profileErr;
         if (ordersErr) throw ordersErr;
@@ -127,7 +127,7 @@ const Account = () => {
                 {orders.map(order => (
                   <div key={order.id} className="border rounded-md p-3 text-sm">
                     <p><strong>Order:</strong> #{order.id.substring(0, 8)}</p>
-                    <p><strong>Date:</strong> {new Date(order.date).toLocaleDateString()}</p>
+                    <p><strong>Date:</strong> {new Date(order.order_date).toLocaleDateString()}</p>
                     <p><strong>Status:</strong> {order.status}</p>
                     {order.order_items && order.order_items.length > 0 && (
                       <ul className="mt-1 pl-5 list-disc">

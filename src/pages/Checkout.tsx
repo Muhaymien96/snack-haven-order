@@ -96,6 +96,7 @@ const Checkout = () => {
   
       const orderData = {
         user_id: userId!,
+        order_date: new Date().toISOString(),
         delivery_date: formattedDeliveryDate,
         is_special_order: isSpecialOrder,
         special_instructions: values.specialInstructions,

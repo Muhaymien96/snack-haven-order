@@ -12,8 +12,6 @@ export type Database = {
       orders: {
         Row: {
           id: string;
-          date: string | null;
-          quantity: number | null;
           status: 'pending' | 'processing' | 'approved' | 'rejected' | 'completed' | null;
           type: 'regular' | 'bulk' | 'custom' | null;
           user_id: string | null;
@@ -22,8 +20,6 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          date?: string | null;
-          quantity?: number | null;
           status?: 'pending' | 'processing' | 'approved' | 'rejected' | 'completed' | null;
           type?: 'regular' | 'bulk' | 'custom' | null;
           user_id?: string | null;
@@ -32,8 +28,6 @@ export type Database = {
         };
         Update: {
           id?: string;
-          date?: string | null;
-          quantity?: number | null;
           status?: 'pending' | 'processing' | 'approved' | 'rejected' | 'completed' | null;
           type?: 'regular' | 'bulk' | 'custom' | null;
           user_id?: string | null;
