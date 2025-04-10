@@ -21,38 +21,26 @@ import { Input } from '@/components/ui/input';
 import { Cake } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', description: '' });
+  const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    const checkAccessAndLoad = async () => {
-      if (!user) {
-        navigate('/login');
-        return;
-      }
+    if (!user && !authLoading) {
+      navigate('/login');
+      return;
+    }
 
+    if (user && role === 'admin') {
+      navigate('/admin');
+    }
+
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('mobile')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-
-        const isAdminUser = data?.mobile === '0662538342';
-        setIsAdmin(isAdminUser);
-
-        if (!isAdminUser) {
-          toast.error('You do not have permission to access this page');
-          navigate('/products');
-          return;
-        }
-
         const [{ data: ordersData, error: ordersError }, { data: productsData, error: productsError }] = await Promise.all([
           supabase.from('orders').select('*').order('created_at', { ascending: false }),
           supabase.from('products').select('*').order('created_at', { ascending: false })
@@ -63,16 +51,18 @@ const AdminDashboard = () => {
         setOrders(ordersData || []);
         setProducts(productsData || []);
       } catch (error) {
-        console.error('Admin check or fetch failed:', error);
-        toast.error('Failed to verify admin or load data');
+        console.error('Error fetching admin data:', error);
+        toast.error('Failed to load admin data');
         navigate('/products');
       } finally {
         setLoading(false);
       }
     };
 
-    checkAccessAndLoad();
-  }, [user, navigate]);
+    if (role === 'admin') {
+      fetchData();
+    }
+  }, [user, role, authLoading, navigate]);
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
@@ -98,7 +88,9 @@ const AdminDashboard = () => {
   };
 
   const handleProductChange = (id, field, value) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+    setProducts(prev =>
+      prev.map(p => (p.id === id ? { ...p, [field]: value } : p))
+    );
   };
 
   const handleUpdateProduct = async (id) => {
@@ -123,7 +115,60 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
+  const handleDeleteProduct = async (id) => {
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
+      setProducts(prev => prev.filter(p => p.id !== id));
+      toast.success('Product deleted');
+    } catch (error) {
+      console.error('Delete failed:', error);
+      toast.error('Could not delete product');
+    }
+  };
+
+  const handleCreateProduct = async () => {
+    if (!newProduct.name || !newProduct.price) {
+      toast.error('Name and price required');
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{ ...newProduct, price: parseFloat(newProduct.price), available: true }])
+        .select(); // Ensures `data` is returned
+  
+      if (error || !data || data.length === 0) throw error || new Error('Insert failed');
+  
+      setProducts(prev => [data[0], ...prev]);
+      setNewProduct({ name: '', price: '', description: '' });
+      toast.success('Product created');
+    } catch (error) {
+      console.error('Create failed:', error);
+      toast.error('Could not create product');
+    }
+  };
+  
+
+  const filteredOrders = orders.filter(order =>
+    order.status.toLowerCase().includes(filter.toLowerCase()) ||
+    order.id.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const handleExportOrders = () => {
+    const csvContent = 'data:text/csv;charset=utf-8,' +
+      ['ID,Status,Delivery Date']
+        .concat(filteredOrders.map(o => `${o.id},${o.status},${o.delivery_date}`))
+        .join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'orders.csv');
+    document.body.appendChild(link);
+    link.click();
+  };
+
+  if (authLoading || loading) {
     return (
       <div className="container-custom py-12">
         <div className="max-w-6xl mx-auto">
@@ -137,7 +182,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) return null;
+  if (role !== 'admin') return null;
 
   return (
     <div className="container-custom py-12">
@@ -158,10 +203,21 @@ const AdminDashboard = () => {
               </TabsList>
 
               <TabsContent value="orders" className="mt-6">
-                <h3 className="text-xl font-semibold mb-4">Recent Orders</h3>
-                {orders.length > 0 ? (
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">Recent Orders</h3>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Filter orders..."
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <Button onClick={handleExportOrders}>Export CSV</Button>
+                  </div>
+                </div>
+                {filteredOrders.length > 0 ? (
                   <div className="space-y-4">
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                       <Card key={order.id} className="overflow-hidden">
                         <CardContent className="p-0">
                           <div className="p-6">
@@ -185,30 +241,12 @@ const AdminDashboard = () => {
                             <div className="mt-4 flex flex-wrap gap-2">
                               {order.status === 'pending' && (
                                 <>
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleUpdateOrderStatus(order.id, 'approved')}
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="destructive"
-                                    onClick={() => handleUpdateOrderStatus(order.id, 'rejected')}
-                                  >
-                                    Reject
-                                  </Button>
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleUpdateOrderStatus(order.id, 'approved')}>Approve</Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleUpdateOrderStatus(order.id, 'rejected')}>Reject</Button>
                                 </>
                               )}
                               {order.status === 'approved' && (
-                                <Button 
-                                  size="sm" 
-                                  className="bg-blue-600 hover:bg-blue-700"
-                                  onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
-                                >
-                                  Mark as Completed
-                                </Button>
+                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleUpdateOrderStatus(order.id, 'completed')}>Mark as Completed</Button>
                               )}
                             </div>
                           </div>
@@ -223,6 +261,26 @@ const AdminDashboard = () => {
 
               <TabsContent value="products" className="mt-6">
                 <h3 className="text-xl font-semibold mb-4">Manage Products</h3>
+                <div className="mb-6 space-y-2">
+                  <Input
+                    placeholder="Product Name"
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Price"
+                    type="number"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct(prev => ({ ...prev, price: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Description"
+                    value={newProduct.description}
+                    onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                  <Button onClick={handleCreateProduct}>Create Product</Button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {products.map((product) => (
                     <Card key={product.id}>
@@ -249,9 +307,10 @@ const AdminDashboard = () => {
                           onChange={(e) => handleProductChange(product.id, 'description', e.target.value)}
                           placeholder="Description"
                         />
-                        <Button onClick={() => handleUpdateProduct(product.id)}>
-                          Save Changes
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button onClick={() => handleUpdateProduct(product.id)}>Save Changes</Button>
+                          <Button variant="destructive" onClick={() => handleDeleteProduct(product.id)}>Delete</Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
