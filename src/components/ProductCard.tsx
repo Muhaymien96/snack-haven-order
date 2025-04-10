@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, ShoppingCart } from 'lucide-react';
+import { Minus, Plus, ShoppingCart } from 'lucide-react';
 
 type ProductCardProps = {
   product: ProductType;
@@ -17,9 +17,18 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>(
     product.flavors && product.flavors.length > 0 ? product.flavors[0] : undefined
   );
+  const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
-    addToCart(product, 1, selectedFlavor);
+    addToCart(product, quantity, selectedFlavor);
+  };
+
+  const incrementQuantity = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const decrementQuantity = () => {
+    setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   };
 
   return (
@@ -62,6 +71,28 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
               </SelectContent>
             </Select>
           )}
+          
+          {/* Quantity Selector */}
+          <div className="flex items-center justify-between w-full border rounded-md overflow-hidden">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-none"
+              onClick={decrementQuantity}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="text-center flex-grow">{quantity}</span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-none"
+              onClick={incrementQuantity}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          
           <Button 
             variant="default" 
             className="w-full bg-terracotta hover:bg-terracotta/90"

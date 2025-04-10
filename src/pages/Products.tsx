@@ -30,7 +30,10 @@ const Products = () => {
   return (
     <div className="container-custom py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <h1 className="text-3xl font-bold text-earth">Our Products</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-earth">Our Products</h1>
+          <p className="text-muted-foreground mt-1">Handcrafted with love in Gordons Bay, Cape Town</p>
+        </div>
         
         <Link to="/cart">
           <Button variant="outline" className="mt-4 md:mt-0 relative">
