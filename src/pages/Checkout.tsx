@@ -129,16 +129,16 @@ const Checkout = () => {
         .eq('id', userId)
         .single();
       
-      // if (profileError) {
-      //   console.error('Failed to fetch user profile for Twilio:', profileError);
-      // } else {
-      //   // ✅ Send WhatsApp notification using frontend logic
-      //   const { block_number, unit_number } = profile;
-      //   await sendAdminSmsNotification({
-      //     message: `New order placed! Block: ${block_number}, Unit: ${unit_number}, Delivery: ${deliveryDate}, Payment: ${values.paymentMethod === 'cod' ? 'Cash on Delivery' : 'EFT'}`,
-      //   });
+      if (profileError) {
+        console.error('Failed to fetch user profile for Twilio:', profileError);
+      } else {
+        // ✅ Send WhatsApp notification using frontend logic
+        const { block_number, unit_number } = profile;
+        await sendAdminSmsNotification({
+          message: `New order placed! Block: ${block_number}, Unit: ${unit_number}, Delivery: ${deliveryDate}, Payment: ${values.paymentMethod === 'cod' ? 'Cash on Delivery' : 'EFT'}`,
+        });
       
-      // }
+      }
       // ✅ Send order confirmation to the user      
   
       clearCart();
