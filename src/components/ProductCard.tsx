@@ -1,3 +1,4 @@
+
 import { ProductType } from '@/types';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
@@ -8,7 +9,11 @@ import { useState } from 'react';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Minus, Plus, ShoppingCart } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from '@/components/ui/input';
+import { ShoppingCart, Plus } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useOrder } from '@/contexts/OrderContext';
 
 type ProductCardProps = {
   product: ProductType;
@@ -17,6 +22,8 @@ type ProductCardProps = {
 
 const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const { isSpecialOrder } = useOrder();
+  const isMobile = useIsMobile();
 
   const parsedFlavours = Array.isArray(product.flavours)
     ? product.flavours.map(f => f.trim()).filter(Boolean)
@@ -27,17 +34,20 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
   );
 
   const [quantity, setQuantity] = useState(1);
+  const [customQuantity, setCustomQuantity] = useState("");
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedFlavor);
+    const finalQuantity = customQuantity ? parseInt(customQuantity, 10) : quantity;
+    if (finalQuantity > 0 && !isNaN(finalQuantity)) {
+      addToCart(product, finalQuantity, selectedFlavor);
+    }
   };
 
-  const incrementQuantity = () => setQuantity(prev => prev + 1);
-  const decrementQuantity = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
+  const bulkOptions = isSpecialOrder ? [10, 20, 30, 40, 50] : [1, 2, 3, 4, 5];
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden hover:shadow-md transition-shadow duration-300">
-      <div className="aspect-square overflow-hidden bg-muted">
+    <Card className="h-full flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300 border-transparent hover:border-terracotta/20">
+      <div className="aspect-square overflow-hidden bg-gradient-to-b from-muted/50 to-muted">
         <img
           src={product.image_url || '/placeholder.svg'}
           alt={product.name || 'Product'}
@@ -45,25 +55,24 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
         />
       </div>
 
-      <CardHeader className="flex-grow">
-        <CardTitle className="text-xl text-earth">{product.name}</CardTitle>
-        <CardDescription className="text-muted-foreground">
-          {parsedFlavours.length > 0 && (
-            <span>Available in: {parsedFlavours.join(', ')}</span>
-          )}
-        </CardDescription>
+      <CardHeader className="flex-grow space-y-2 pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-xl text-earth">{product.name}</CardTitle>
+          <span className="text-lg font-semibold text-terracotta">
+            R{(product.price ?? 0).toFixed(2)}
+          </span>
+        </div>
+        {parsedFlavours.length > 0 && (
+          <CardDescription className="text-muted-foreground">
+            Available in {parsedFlavours.length} flavors
+          </CardDescription>
+        )}
       </CardHeader>
 
-      <CardContent>
-        <p className="text-lg font-semibold text-terracotta">
-          R{(product.price ?? 0).toFixed(2)}
-        </p>
-      </CardContent>
-
       {showActions && (
-        <CardFooter className="flex flex-col gap-2">
+        <CardContent className="pt-0">
           {parsedFlavours.length > 0 && (
-            <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
+            <Select value={selectedFlavor} onValueChange={setSelectedFlavor} className="mb-3">
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select flavor" />
               </SelectTrigger>
@@ -77,25 +86,55 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
             </Select>
           )}
 
-          <div className="flex items-center justify-between w-full border rounded-md overflow-hidden">
-            <Button variant="ghost" size="icon" className="rounded-none" onClick={decrementQuantity}>
-              <Minus className="h-4 w-4" />
+          {isSpecialOrder ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                {bulkOptions.map((option) => (
+                  <Button
+                    key={option}
+                    variant={quantity === option ? "default" : "outline"}
+                    className={`${quantity === option ? "bg-terracotta hover:bg-terracotta/90" : ""}`}
+                    onClick={() => {
+                      setQuantity(option);
+                      setCustomQuantity("");
+                    }}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Custom quantity"
+                  value={customQuantity}
+                  onChange={(e) => {
+                    setCustomQuantity(e.target.value);
+                    setQuantity(0);
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  variant="default"
+                  className="bg-terracotta hover:bg-terracotta/90 flex-shrink-0"
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="default"
+              className="w-full bg-terracotta hover:bg-terracotta/90"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Add to Cart
             </Button>
-            <span className="text-center flex-grow">{quantity}</span>
-            <Button variant="ghost" size="icon" className="rounded-none" onClick={incrementQuantity}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Button
-            variant="default"
-            className="w-full bg-terracotta hover:bg-terracotta/90"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart
-          </Button>
-        </CardFooter>
+          )}
+        </CardContent>
       )}
     </Card>
   );

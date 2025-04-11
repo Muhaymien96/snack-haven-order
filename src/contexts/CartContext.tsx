@@ -7,14 +7,15 @@ export type CartItemType = {
   product: ProductType;
   quantity: number;
   flavor?: string;
+  isSpecialOrder?: boolean;
 };
 
 type CartContextType = {
   cartItems: CartItemType[];
-  addToCart: (product: ProductType, quantity?: number, flavor?: string) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  updateFlavor: (productId: string, flavor: string) => void;
+  addToCart: (product: ProductType, quantity?: number, flavor?: string, isSpecialOrder?: boolean) => void;
+  removeFromCart: (productId: string, flavor?: string) => void;
+  updateQuantity: (productId: string, quantity: number, flavor?: string) => void;
+  updateFlavor: (productId: string, flavor: string, oldFlavor?: string) => void;
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
@@ -53,7 +54,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartCount(count);
   }, [cartItems]);
 
-  const addToCart = (product: ProductType, quantity = 1, flavor?: string) => {
+  const addToCart = (product: ProductType, quantity = 1, flavor?: string, isSpecialOrder?: boolean) => {
     setCartItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex(
         (item) => item.product.id === product.id && 
@@ -75,43 +76,63 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Added to cart",
           description: `${quantity} × ${product.name} added to your cart`,
         });
-        return [...prevItems, { product, quantity, flavor }];
+        return [...prevItems, { product, quantity, flavor, isSpecialOrder }];
       }
     });
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId: string, flavor?: string) => {
     setCartItems((prevItems) => {
-      const removedItem = prevItems.find(item => item.product.id === productId);
-      if (removedItem) {
+      const itemIndex = prevItems.findIndex(
+        item => item.product.id === productId && 
+        (item.product.flavours ? item.flavor === flavor : true)
+      );
+      
+      if (itemIndex !== -1) {
+        const removedItem = prevItems[itemIndex];
         toast({
           title: "Item removed",
           description: `${removedItem.product.name} removed from your cart`,
         });
+        
+        return prevItems.filter((_, index) => index !== itemIndex);
       }
-      return prevItems.filter((item) => item.product.id !== productId);
+      
+      return prevItems;
     });
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, flavor?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, flavor);
       return;
     }
 
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId && 
+        (item.product.flavours ? item.flavor === flavor : true) 
+          ? { ...item, quantity } 
+          : item
       )
     );
   };
 
-  const updateFlavor = (productId: string, flavor: string) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.product.id === productId ? { ...item, flavor } : item
-      )
-    );
+  const updateFlavor = (productId: string, flavor: string, oldFlavor?: string) => {
+    setCartItems((prevItems) => {
+      const existingItemIndex = prevItems.findIndex(
+        (item) => 
+          item.product.id === productId && 
+          (oldFlavor ? item.flavor === oldFlavor : item.flavor === undefined)
+      );
+
+      if (existingItemIndex === -1) return prevItems;
+
+      const newItems = [...prevItems];
+      newItems[existingItemIndex] = { ...newItems[existingItemIndex], flavor };
+      
+      return newItems;
+    });
   };
 
   const clearCart = () => {
