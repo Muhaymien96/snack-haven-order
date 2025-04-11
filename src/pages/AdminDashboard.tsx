@@ -99,9 +99,16 @@ const AdminDashboard = () => {
           `)
           .order('order_date', { ascending: false });
 
-        if (ordersError) throw ordersError;
+        if (ordersError) {
+          console.error('Error fetching orders:', ordersError);
+          toast.error('Failed to load orders');
+          return;
+        }
 
-        setOrders((ordersData as Order[]) || []);
+        // Only set orders if data was returned and is not an error
+        if (ordersData) {
+          setOrders(ordersData as Order[]);
+        }
       } catch (error: any) {
         console.error('Error checking admin or fetching orders:', error);
         toast.error('Failed to load admin data');
