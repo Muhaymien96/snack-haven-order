@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { MessageSquare, Send, Cake } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import type { ContactFormType } from '@/types';
 
 const Contact = () => {
@@ -62,7 +62,7 @@ const Contact = () => {
       });
     } catch (error) {
       console.error('Contact form submission error:', error);
-      toast.error('Failed to send your message. Please try again.');
+      toast.error(error.message ||'Failed to send your message. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -36,31 +36,25 @@ export type Database = {
         Row: {
           id: string;
           name: string;
-          description: string;
           price: number;
-          image: string;
-          category: string;
-          flavors?: string[];
+          image_url: string;
+          flavours?: string[];
           available: boolean;
         };
         Insert: {
           id?: string;
           name: string;
-          description: string;
           price: number;
-          image: string;
-          category: string;
-          flavors?: string[];
+          image_url: string;
+          flavours?: string[];
           available: boolean;
         };
         Update: {
           id?: string;
           name?: string;
-          description?: string;
           price?: number;
-          image?: string;
-          category?: string;
-          flavors?: string[];
+          image_url?: string;
+          flavours?: string[];
           available?: boolean;
         };
       };

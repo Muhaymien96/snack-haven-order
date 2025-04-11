@@ -1,14 +1,39 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
+import { supabase } from '../integrations/supabase/client';
 
-// These are public keys - safe to expose in client-side code
-const supabaseUrl = 'https://xbwcqxjgappwbjkcokdr.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhid2NxeGpnYXBwd2Jqa2Nva2RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMDkwMjUsImV4cCI6MjA1OTY4NTAyNX0.YXq2e39kqzSR75pbWUZXV4h99NmJa94AmRW3oRcNsC8';
+// Extend Supabase type definitions to include 'order_items'
+type OrderItemsTable = {
+  Row: {
+    id: string;
+    order_id: string;
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    flavor?: string;
+    price: number;
+  };
+  Insert: {
+    id?: string;
+    order_id: string;
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    flavor?: string;
+    price: number;
+  };
+  Update: Partial<OrderItemsTable['Insert']>;
+};
 
-// Create a single supabase client for the entire app
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
+// Extend Supabase client with the new table
+declare module '../integrations/supabase/client' {
+  interface Database {
+    public: {
+      Tables: {
+        order_items: OrderItemsTable;
+      };
+    };
+  }
+}
 // Auth helpers
 export const signUp = async (
   name: string,
@@ -19,7 +44,7 @@ export const signUp = async (
   password: string
 ) => {
   const { data, error } = await supabase.auth.signUp({
-    email: `${mobileNumber}@user.snackhaven.co.za`, // Using mobile as unique identifier
+    email: `${mobileNumber}@ttreats.co.za`, // Using mobile as unique identifier
     password,
     options: {
       data: {
@@ -37,7 +62,7 @@ export const signUp = async (
 
 export const signIn = async (mobileNumber: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: `${mobileNumber}@user.snackhaven.co.za`,
+    email: `${mobileNumber}@ttreats.co.za`,
     password,
   });
   
@@ -74,45 +99,54 @@ export const createOrder = async (orderData: {
   }>;
   total: number;
 }) => {
-  // Create the order first
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      user_id: orderData.user_id,
-      order_date: new Date().toISOString(),
-      delivery_date: orderData.delivery_date,
-      status: 'pending',
-      total: orderData.total,
-      is_special_order: orderData.is_special_order,
-      special_instructions: orderData.special_instructions,
-    })
-    .select()
-    .single();
+  try {
+    // Insert the main order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: orderData.user_id,
+        order_date: new Date().toISOString(),
+        delivery_date: orderData.delivery_date,
+        status: 'pending',
+        total: orderData.total,
+        is_special_order: orderData.is_special_order,
+        special_instructions: orderData.special_instructions,
+      })
+      .select()
+      .single();
 
-  if (orderError || !order) {
-    return { data: null, error: orderError };
+    if (orderError || !order) {
+      console.error("Error inserting order:", orderError);
+      return { data: null, error: orderError };
+    }
+
+    // Prepare order items
+    const orderItems = orderData.items.map((item) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      quantity: item.quantity,
+      flavor: item.flavor,
+      price: item.price,
+    }));
+
+    // Insert order items
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error("Error inserting order items:", itemsError);
+      return { data: null, error: itemsError };
+    }
+
+    return { data: order, error: null };
+  } catch (e: any) {
+    console.error("Unexpected error:", e);
+    return { data: null, error: { message: e.message } };
   }
-
-  // Then create order items
-  const orderItems = orderData.items.map(item => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    product_name: item.product_name,
-    quantity: item.quantity,
-    flavor: item.flavor,
-    price: item.price,
-  }));
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
-  if (itemsError) {
-    return { data: null, error: itemsError };
-  }
-
-  return { data: order, error: null };
 };
+
 
 export const submitContactForm = async (formData: {
   name: string;

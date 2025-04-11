@@ -1,11 +1,10 @@
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 type ProfileType = {
   name: string;
@@ -16,49 +15,49 @@ type ProfileType = {
 };
 
 const Account = () => {
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileType | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
+    if (loading) return;  // wait for auth to be determined
     if (!user) {
       navigate('/login');
       return;
     }
-
-    const fetchProfile = async () => {
+    const loadAccountData = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        // Convert the database response to our ProfileType format
-        if (data) {
+        // Fetch profile and orders in parallel
+        const [{ data: profileData, error: profileErr }, { data: ordersData, error: ordersErr }] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase.from('orders')
+            .select(`id, order_date, status, order_items(quantity, products(name))`)
+            .eq('user_id', user.id)
+            .order('order_date', { ascending: false })
+        ]);
+        if (profileErr) throw profileErr;
+        if (ordersErr) throw ordersErr;
+        if (profileData) {
           setProfile({
-            name: data.name || '',
-            surname: data.surname || '',
-            block_number: data.block_number || 0,
-            unit_number: data.unit_number || 0,
-            mobile_number: data.mobile || '', // Map 'mobile' from DB to 'mobile_number' in our type
+            name: profileData.name || '',
+            surname: profileData.surname || '',
+            block_number: profileData.block_number || 0,
+            unit_number: profileData.unit_number || 0,
+            mobile_number: profileData.mobile || ''  // DB column 'mobile' into state
           });
         }
+        setOrders(ordersData || []);
       } catch (error: any) {
-        console.error('Error fetching profile:', error);
-        toast.error('Failed to load profile information');
+        console.error('Error loading account data:', error);
+        toast.error('Failed to load account information');
       } finally {
-        setLoading(false);
+        setLoadingData(false);
       }
     };
-
-    fetchProfile();
-  }, [user, navigate]);
+    loadAccountData();
+  }, [user, loading, navigate]);
 
   const handleSignOut = async () => {
     try {
@@ -71,7 +70,7 @@ const Account = () => {
     }
   };
 
-  if (loading) {
+  if (loadingData) {
     return (
       <div className="container-custom py-12">
         <div className="max-w-md mx-auto">
@@ -85,6 +84,10 @@ const Account = () => {
     );
   }
 
+  if (!profile) {
+    return null;  // if profile failed to load, already handled by toast
+  }
+
   return (
     <div className="container-custom py-12">
       <div className="max-w-md mx-auto">
@@ -92,44 +95,52 @@ const Account = () => {
           <CardHeader>
             <CardTitle className="text-2xl text-center">My Account</CardTitle>
           </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Name</p>
+              <p className="text-lg font-medium">{profile.name} {profile.surname}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Mobile Number</p>
+              <p className="text-lg font-medium">{profile.mobile_number}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Address</p>
+              <p className="text-lg font-medium">
+                Block {profile.block_number}, Unit {profile.unit_number}
+              </p>
+            </div>
+            <Button variant="destructive" className="w-full mt-4" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* My Orders Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="text-xl">My Orders</CardTitle>
+          </CardHeader>
           <CardContent>
-            {profile && (
+            {orders.length > 0 ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="text-lg font-medium">{profile.name}</p>
+                {orders.map(order => (
+                  <div key={order.id} className="border rounded-md p-3 text-sm">
+                    <p><strong>Order:</strong> #{order.id.substring(0, 8)}</p>
+                    <p><strong>Date:</strong> {new Date(order.order_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> {order.status}</p>
+                    {order.order_items && order.order_items.length > 0 && (
+                      <ul className="mt-1 pl-5 list-disc">
+                        {order.order_items.map((item: any, idx: number) => (
+                          <li key={idx}>{item.quantity} × {item.products.name}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Surname</p>
-                    <p className="text-lg font-medium">{profile.surname}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Block Number</p>
-                    <p className="text-lg font-medium">{profile.block_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Unit Number</p>
-                    <p className="text-lg font-medium">{profile.unit_number}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-sm text-muted-foreground">Mobile Number</p>
-                  <p className="text-lg font-medium">{profile.mobile_number}</p>
-                </div>
-
-                <Button 
-                  onClick={handleSignOut} 
-                  variant="destructive" 
-                  className="w-full mt-6"
-                >
-                  Sign Out
-                </Button>
+                ))}
               </div>
+            ) : (
+              <p className="text-center text-muted-foreground">You have no orders yet.</p>
             )}
           </CardContent>
         </Card>

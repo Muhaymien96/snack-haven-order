@@ -1,39 +1,58 @@
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Cake } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import ProductManager from '../components/ProductManager';
+
+export const ORDER_STATUSES = ['pending', 'processing', 'approved', 'rejected', 'completed'] as const;
+export type OrderStatus = typeof ORDER_STATUSES[number];
+
+type OrderItem = {
+  quantity: number;
+  products: {
+    name: string;
+  };
+};
+
+type Order = {
+  id: string;
+  order_date: string;
+  status: OrderStatus;
+  user_id: {
+    name: string;
+    surname: string;
+    mobile: string;
+  };
+  order_items: OrderItem[];
+};
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) {
       navigate('/login');
       return;
     }
 
-    const checkIfAdmin = async () => {
+    const checkAdminAndFetch = async () => {
       try {
-        const { data, error } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('mobile')
           .eq('id', user.id)
           .single();
 
-        if (error) throw error;
-
-        // Check if the user is an admin (mobile number check)
-        const isAdminUser = data?.mobile === '0662538342';
+        if (profileError || !profile) throw profileError;
+        const isAdminUser = profile.mobile === '0662538342';
         setIsAdmin(isAdminUser);
 
         if (!isAdminUser) {
@@ -42,37 +61,27 @@ const AdminDashboard = () => {
           return;
         }
 
-        // Fetch orders if user is admin
-        fetchOrders();
-      } catch (error: any) {
-        console.error('Error checking admin status:', error);
-        toast.error('Failed to verify admin status');
-        navigate('/products');
-      }
-    };
-
-    const fetchOrders = async () => {
-      try {
-        const { data, error } = await supabase
+        const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select('*')
-          .order('date', { ascending: false });
+          .select(`id, order_date, status, user_id(name, surname, mobile), order_items(quantity, products(name))`)
+          .order('order_date', { ascending: false });
 
-        if (error) throw error;
+        if (ordersError) throw ordersError;
 
-        setOrders(data || []);
+        setOrders((ordersData as Order[]) || []);
       } catch (error: any) {
-        console.error('Error fetching orders:', error);
-        toast.error('Failed to load orders');
+        console.error('Error checking admin or fetching orders:', error);
+        toast.error('Failed to load admin data');
+        navigate('/products');
       } finally {
-        setLoading(false);
+        setLoadingOrders(false);
       }
     };
 
-    checkIfAdmin();
-  }, [user, navigate]);
+    checkAdminAndFetch();
+  }, [user, loading, navigate]);
 
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       const { error } = await supabase
         .from('orders')
@@ -81,157 +90,110 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      toast.success(`Order status updated to ${newStatus}`);
-      
-      // Refresh orders after update
-      const { data, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('date', { ascending: false });
+      toast.success(`Order marked as ${newStatus}`);
 
-      if (fetchError) throw fetchError;
-      
-      setOrders(data || []);
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
     } catch (error: any) {
-      console.error('Error updating order:', error);
+      console.error('Error updating status:', error);
       toast.error('Failed to update order status');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container-custom py-12">
-        <div className="max-w-6xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl text-center">Loading...</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null; // Navigate happens in useEffect
-  }
+  if (!isAdmin) return null;
 
   return (
-    <div className="container-custom py-12">
-      <div className="max-w-6xl mx-auto">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Cake size={48} className="text-amber-800" />
-            </div>
-            <CardTitle className="text-2xl text-amber-800">Thaneya's Treats Admin Dashboard</CardTitle>
-            <CardDescription>
-              Manage orders and products
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="orders" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="orders">Orders</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="orders" className="mt-6">
-                <h3 className="text-xl font-semibold mb-4">Recent Orders</h3>
-                {orders.length > 0 ? (
-                  <div className="space-y-4">
-                    {orders.map((order: any) => (
-                      <Card key={order.id} className="overflow-hidden">
-                        <CardContent className="p-0">
-                          <div className="p-6">
-                            <div className="flex justify-between items-center mb-4">
-                              <div>
-                                <h4 className="font-medium">Order #{order.id.substring(0, 8)}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Date: {new Date(order.date).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <div className="flex items-center">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  order.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                  order.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {order.status}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              {order.status === 'pending' && (
-                                <>
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleUpdateOrderStatus(order.id, 'approved')}
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="destructive"
-                                    onClick={() => handleUpdateOrderStatus(order.id, 'rejected')}
-                                  >
-                                    Reject
-                                  </Button>
-                                </>
-                              )}
-                              {order.status === 'approved' && (
-                                <Button 
-                                  size="sm" 
-                                  className="bg-blue-600 hover:bg-blue-700"
-                                  onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
-                                >
-                                  Mark as Completed
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+    <div className="p-6">
+      <h2 className="text-xl font-bold mb-4">Admin Dashboard</h2>
+      <Tabs defaultValue="orders">
+        <TabsList>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="products">Manage Products</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="orders">
+          {loadingOrders ? (
+            <p>Loading orders...</p>
+          ) : orders.length > 0 ? (
+            <div className="space-y-4">
+              {orders.map(order => (
+                <div key={order.id} className="border rounded-lg p-4 bg-white shadow">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="font-medium">Order #{order.id.substring(0, 8)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Date: {new Date(order.order_date).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Customer: {order.user_id?.name} {order.user_id?.surname} ({order.user_id?.mobile})
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 text-xs rounded-full ${
+                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      order.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      order.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {order.status}
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">No orders found</p>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="products" className="mt-6">
-                <h3 className="text-xl font-semibold mb-4">Products</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Product Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        <li>Bollas: R6.00</li>
-                        <li>Koeksisters: R6.00</li>
-                        <li>Chicken Samoosas: R5.00</li>
-                        <li>Mince Samoosas: R5.00</li>
-                      </ul>
-                      <div className="mt-4">
-                        <p className="text-sm text-muted-foreground">
-                          Contact Info: 072 227 7345 (WhatsApp)
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Email: t.dollie982@gmail.com
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+
+                  {order.order_items?.length > 0 && (
+                    <ul className="mt-2 text-sm list-disc pl-5">
+                      {order.order_items.map((item, idx) => (
+                        <li key={idx}>
+                          {item.quantity} × {item.products.name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="mt-3 space-x-2">
+                    {order.status === 'pending' && (
+                      <>
+                        <button
+                          className="px-3 py-1 text-sm font-medium bg-green-600 text-white rounded"
+                          onClick={() => handleUpdateOrderStatus(order.id, 'approved')}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="px-3 py-1 text-sm font-medium bg-red-600 text-white rounded"
+                          onClick={() => handleUpdateOrderStatus(order.id, 'rejected')}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {order.status === 'approved' && (
+                      <button
+                        className="px-3 py-1 text-sm font-medium bg-blue-600 text-white rounded"
+                        onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                      >
+                        Mark as Completed
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No orders found.</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <p className="text-muted-foreground">Coming soon: Sales data, total revenue, and more analytics.</p>
+        </TabsContent>
+
+        <TabsContent value="products">
+          <ProductManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

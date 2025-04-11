@@ -1,27 +1,51 @@
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Calendar, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/data/products';
-import { signOut } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ProductType } from '@/types';
 
 const Landing = () => {
-  // This would log out any user on the landing page
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   useEffect(() => {
     const performLogout = async () => {
-      const { error } = await signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error logging out:', error);
       } else {
         console.log('User logged out successfully');
       }
     };
-    
+
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, type, flavours, image_url')
+        .limit(4);
+
+      if (error) {
+        console.error('Failed to load products:', error);
+        toast.error('Failed to load products');
+      } else {
+        setProducts(data || []);
+      }
+    };
+
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user) {
+        setIsAuthenticated(true);
+      }
+    };
+
     performLogout();
+    fetchProducts();
+    checkUser();
   }, []);
 
   return (
@@ -62,8 +86,8 @@ const Landing = () => {
       {/* Featured Products */}
       <section className="py-16">
         <div className="container-custom">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div>
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div className="text-center md:text-left">
               <h2 className="text-3xl font-bold text-earth">Our Products</h2>
               <p className="text-muted-foreground mt-2">
                 Traditional South African snacks made with love
@@ -80,7 +104,7 @@ const Landing = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -92,7 +116,6 @@ const Landing = () => {
       <section className="py-16 bg-sage/10">
         <div className="container-custom">
           <h2 className="text-3xl font-bold text-earth text-center mb-12">How It Works</h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="text-center">
@@ -107,7 +130,6 @@ const Landing = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="text-center">
                 <div className="mx-auto rounded-full w-12 h-12 flex items-center justify-center bg-terracotta/10 text-terracotta mb-4">
@@ -121,7 +143,6 @@ const Landing = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="text-center">
                 <div className="mx-auto rounded-full w-12 h-12 flex items-center justify-center bg-terracotta/10 text-terracotta mb-4">
@@ -140,24 +161,26 @@ const Landing = () => {
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 bg-terracotta text-white">
-        <div className="container-custom text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Place an Order?</h2>
-          <p className="mb-8 max-w-2xl mx-auto">
-            Create an account to start ordering our delicious South African treats for delivery.
-          </p>
-          <Button 
-            asChild
-            size="lg" 
-            variant="outline" 
-            className="border-white text-white hover:bg-white/10"
-          >
-            <Link to="/register">
-              Register Now
-            </Link>
-          </Button>
-        </div>
-      </section>
+      {!isAuthenticated && (
+        <section className="py-16 bg-sage text-white">
+          <div className="container-custom text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Place an Order?</h2>
+            <p className="mb-8 max-w-2xl mx-auto">
+              Create an account to start ordering our delicious South African treats for delivery.
+            </p>
+            <Button 
+              asChild
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white/10"
+            >
+              <Link to="/register">
+                Register Now
+              </Link>
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

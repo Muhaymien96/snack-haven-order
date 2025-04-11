@@ -1,5 +1,8 @@
-
+<<<<<<<<< Temporary merge branch 1
+# Welcome to Thaneya's Treats
+=========
 # Welcome to Thaneyas Treats
+>>>>>>> e653c51f49611776404b6344656e896cd03e3aff
 
 ## Project info
 Simple ordering system

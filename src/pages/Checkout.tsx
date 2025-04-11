@@ -1,5 +1,7 @@
 
 import { useEffect, useState } from 'react';
+import { sendAdminSmsNotification } from '@/lib/twilio';
+import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -68,7 +70,7 @@ const Checkout = () => {
       navigate('/login');
       return;
     }
-
+  
     if (cartItems.length === 0) {
       toast({
         title: "Empty cart",
@@ -77,7 +79,7 @@ const Checkout = () => {
       });
       return;
     }
-
+  
     if (!deliveryDate) {
       toast({
         title: "Delivery date required",
@@ -86,13 +88,16 @@ const Checkout = () => {
       });
       return;
     }
-
+  
     setIsSubmitting(true);
-
+  
     try {
+      const formattedDeliveryDate = new Date(deliveryDate).toISOString().split('T')[0]; // yyyy-mm-dd
+  
       const orderData = {
         user_id: userId!,
-        delivery_date: deliveryDate,
+        order_date: new Date().toISOString(),
+        delivery_date: formattedDeliveryDate,
         is_special_order: isSpecialOrder,
         special_instructions: values.specialInstructions,
         total: cartTotal,
@@ -104,33 +109,54 @@ const Checkout = () => {
           price: item.product.price,
         })),
       };
-
+  
+      console.log("Submitting order:", orderData);
+  
       const { data, error } = await createOrder(orderData);
 
       if (error) {
         throw new Error(error.message);
       }
-
-      // Clear the cart after successful order
-      clearCart();
       
+      // 🔁 Fetch user's block/unit number from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('block_number, unit_number')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError) {
+        console.error('Failed to fetch user profile for Twilio:', profileError);
+      } else {
+        // ✅ Send WhatsApp notification using frontend logic
+        const { block_number, unit_number } = profile;
+        await sendAdminSmsNotification({
+          message: `New order placed! Block: ${block_number}, Unit: ${unit_number}, Delivery: ${deliveryDate}`,
+        });
+      
+      }
+      // ✅ Send order confirmation to the user      
+  
+      clearCart();
+  
       toast({
         title: "Order placed!",
         description: `Your order #${data.id} has been placed successfully`,
       });
-      
+  
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing order:', error);
       toast({
         title: "Order failed",
-        description: "There was an error placing your order. Please try again.",
+        description: error.message || "There was an error placing your order. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+  
 
   if (cartCount === 0) {
     return (

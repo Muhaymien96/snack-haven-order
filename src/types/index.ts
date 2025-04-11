@@ -13,12 +13,9 @@ export type UserType = {
 export type ProductType = {
   id: string;
   name: string;
-  description: string;
   price: number;
-  image: string;
-  category: string;
-  flavors?: string[];
-  available: boolean;
+  flavours?: string[];
+  image_url?: string;
 };
 
 export type OrderType = {

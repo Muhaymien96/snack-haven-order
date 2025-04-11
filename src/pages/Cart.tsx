@@ -1,4 +1,4 @@
-
+import { useEffect, useState } from 'react';
 import { useCart, CartItemType } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -6,6 +6,8 @@ import { Minus, Plus, Trash, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { ProductType } from '@/types';
 
 const CartItem = ({ item }: { item: CartItemType }) => {
   const { updateQuantity, removeFromCart, updateFlavor } = useCart();
@@ -14,16 +16,17 @@ const CartItem = ({ item }: { item: CartItemType }) => {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center py-4 border-b">
       <div className="w-full sm:w-20 h-20 mr-4 mb-4 sm:mb-0 overflow-hidden rounded-md bg-muted">
+        {/* Placeholder image only */}
         <img 
-          src={product.image || '/placeholder.svg'} 
-          alt={product.name} 
+          src={'/placeholder.svg'} 
+          alt={product.name || 'Product'} 
           className="w-full h-full object-cover"
         />
       </div>
       <div className="flex-grow mr-4">
         <h3 className="font-medium">{product.name}</h3>
-        <p className="text-sm text-muted-foreground">{product.description.substring(0, 60)}...</p>
-        {product.flavors && product.flavors.length > 0 && (
+        {/* No description available in type */}
+        {product.flavours && product.flavours.length > 0 && (
           <div className="mt-2">
             <Select
               value={flavor}
@@ -33,7 +36,7 @@ const CartItem = ({ item }: { item: CartItemType }) => {
                 <SelectValue placeholder="Select flavor" />
               </SelectTrigger>
               <SelectContent>
-                {product.flavors.map((f) => (
+                {product.flavours.map((f) => (
                   <SelectItem key={f} value={f}>
                     {f}
                   </SelectItem>
@@ -62,7 +65,7 @@ const CartItem = ({ item }: { item: CartItemType }) => {
         </Button>
       </div>
       <div className="flex items-center mt-4 sm:mt-0 ml-0 sm:ml-6">
-        <p className="font-medium mr-4">R{(product.price * quantity).toFixed(2)}</p>
+        <p className="font-medium mr-4">R{(product.price ?? 0 * quantity).toFixed(2)}</p>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -78,6 +81,28 @@ const CartItem = ({ item }: { item: CartItemType }) => {
 
 const Cart = () => {
   const { cartItems, cartTotal, clearCart, cartCount } = useCart();
+  const [productsData, setProductsData] = useState<ProductType[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, type, flavours'); // ✅ Correct spelling
+    
+      if (error) {
+        console.error('Error fetching products:', error);
+      } else {
+        setProductsData(data as ProductType[]);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const enrichedCartItems = cartItems.map((item) => {
+    const updatedProduct = productsData.find(p => p.id === item.product.id);
+    return updatedProduct ? { ...item, product: updatedProduct } : item;
+  });
 
   if (cartCount === 0) {
     return (
@@ -102,7 +127,7 @@ const Cart = () => {
   return (
     <div className="container-custom py-12">
       <h1 className="text-3xl font-bold text-earth mb-8">Your Cart</h1>
-      
+
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-grow">
           <div className="flex justify-between items-center mb-4">
@@ -118,21 +143,21 @@ const Cart = () => {
               Clear Cart
             </Button>
           </div>
-          
+
           <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
             <div className="p-6">
-              {cartItems.map((item) => (
+              {enrichedCartItems.map((item) => (
                 <CartItem key={`${item.product.id}-${item.flavor || 'default'}`} item={item} />
               ))}
             </div>
           </div>
         </div>
-        
+
         <div className="w-full lg:w-80">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
+
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
@@ -143,14 +168,14 @@ const Cart = () => {
                   <Badge variant="outline" className="text-terracotta">Free</Badge>
                 </div>
               </div>
-              
+
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
                   <span>R{cartTotal.toFixed(2)}</span>
                 </div>
               </div>
-              
+
               <Link to="/checkout">
                 <Button className="w-full bg-terracotta hover:bg-terracotta/90">
                   Proceed to Checkout
