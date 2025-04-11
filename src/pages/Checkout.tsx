@@ -21,12 +21,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, ShoppingCart, AlertCircle } from 'lucide-react';
+import { Check, ShoppingCart, AlertCircle, CreditCard, Banknote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrder } from '@/contexts/OrderContext';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   specialInstructions: z.string().optional(),
+  paymentMethod: z.enum(['cod', 'eft']).default('cod'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -43,6 +45,7 @@ const Checkout = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       specialInstructions: '',
+      paymentMethod: 'cod',
     },
   });
 
@@ -100,6 +103,7 @@ const Checkout = () => {
         delivery_date: formattedDeliveryDate,
         is_special_order: isSpecialOrder,
         special_instructions: values.specialInstructions,
+        payment_method: values.paymentMethod,
         total: cartTotal,
         items: cartItems.map(item => ({
           product_id: item.product.id,
@@ -131,7 +135,7 @@ const Checkout = () => {
         // ✅ Send WhatsApp notification using frontend logic
         const { block_number, unit_number } = profile;
         await sendAdminSmsNotification({
-          message: `New order placed! Block: ${block_number}, Unit: ${unit_number}, Delivery: ${deliveryDate}`,
+          message: `New order placed! Block: ${block_number}, Unit: ${unit_number}, Delivery: ${deliveryDate}, Payment: ${values.paymentMethod === 'cod' ? 'Cash on Delivery' : 'EFT'}`,
         });
       
       }
@@ -273,6 +277,61 @@ const Checkout = () => {
                       </FormItem>
                     )}
                   />
+                )}
+              </div>
+              
+              <div className="bg-card rounded-lg border shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+                
+                <FormField
+                  control={form.control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-3"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="cod" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer flex items-center">
+                              <Banknote className="mr-2 h-4 w-4" />
+                              Cash on Delivery
+                            </FormLabel>
+                          </FormItem>
+                          
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="eft" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer flex items-center">
+                              <CreditCard className="mr-2 h-4 w-4" />
+                              EFT (Electronic Transfer)
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {form.watch('paymentMethod') === 'eft' && (
+                  <div className="mt-4 p-3 bg-sage/10 rounded-md border border-sage/20">
+                    <h4 className="font-medium text-earth mb-2">Bank Details</h4>
+                    <div className="text-sm space-y-1">
+                      <p><span className="font-medium">Bank:</span> FNB</p>
+                      <p><span className="font-medium">Account Name:</span> Thaneyas Treats</p>
+                      <p><span className="font-medium">Account Number:</span> 62561911903</p>
+                      <p className="text-muted-foreground text-xs mt-2">
+                        Please use your name and delivery date as reference when making payment.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
               

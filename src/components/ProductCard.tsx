@@ -39,7 +39,16 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
   const handleAddToCart = () => {
     const finalQuantity = customQuantity ? parseInt(customQuantity, 10) : quantity;
     if (finalQuantity > 0 && !isNaN(finalQuantity)) {
-      addToCart(product, finalQuantity, selectedFlavor);
+      // Use the product name with flavor for "Bolla" products if coconut is selected
+      let productToAdd = {...product};
+      if (selectedFlavor === 'Coconut' && product.name.toLowerCase().includes('bolla')) {
+        productToAdd = {
+          ...product,
+          name: 'Coconut Bolla'
+        };
+      }
+      
+      addToCart(productToAdd, finalQuantity, selectedFlavor);
     }
   };
 
@@ -73,7 +82,7 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
         <CardContent className="pt-0">
           {parsedFlavours.length > 0 && (
             <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full mb-3">
                 <SelectValue placeholder="Select flavor" />
               </SelectTrigger>
               <SelectContent>

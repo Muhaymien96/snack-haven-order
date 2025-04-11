@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,25 +7,45 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import ProductManager from '../components/ProductManager';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Check, 
+  X, 
+  Clock, 
+  Package, 
+  CreditCard, 
+  Calendar, 
+  User, 
+  ShoppingBag,
+  Phone
+} from 'lucide-react';
 
 export const ORDER_STATUSES = ['pending', 'processing', 'approved', 'rejected', 'completed'] as const;
 export type OrderStatus = typeof ORDER_STATUSES[number];
 
 type OrderItem = {
+  id: string;
   quantity: number;
-  products: {
-    name: string;
-  };
+  flavor?: string;
+  price: number;
+  product_name: string;
 };
 
 type Order = {
   id: string;
   order_date: string;
   status: OrderStatus;
+  delivery_date: string;
+  total: number;
+  is_special_order: boolean;
+  special_instructions?: string;
+  payment_method?: string;
   user_id: {
     name: string;
     surname: string;
     mobile: string;
+    block_number: number;
+    unit_number: number;
   };
   order_items: OrderItem[];
 };
@@ -35,6 +56,7 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -63,7 +85,18 @@ const AdminDashboard = () => {
 
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select(`id, order_date, status, user_id(name, surname, mobile), order_items(quantity, products(name))`)
+          .select(`
+            id, 
+            order_date, 
+            status, 
+            delivery_date,
+            total,
+            is_special_order,
+            special_instructions,
+            payment_method,
+            user_id(name, surname, mobile, block_number, unit_number), 
+            order_items(id, quantity, flavor, price, product_name)
+          `)
           .order('order_date', { ascending: false });
 
         if (ordersError) throw ordersError;
@@ -103,6 +136,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const getStatusBadge = (status: OrderStatus) => {
+    switch(status) {
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
+      case 'processing':
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Processing</Badge>;
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Rejected</Badge>;
+      case 'completed':
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Completed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const toggleOrderExpand = (orderId: string) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -122,62 +176,143 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               {orders.map(order => (
                 <div key={order.id} className="border rounded-lg p-4 bg-white shadow">
-                  <div className="flex justify-between">
-                    <div>
-                      <p className="font-medium">Order #{order.id.substring(0, 8)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Date: {new Date(order.order_date).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Customer: {order.user_id?.name} {order.user_id?.surname} ({order.user_id?.mobile})
-                      </p>
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag className="h-5 w-5 text-terracotta" />
+                        <p className="font-medium">Order #{order.id.substring(0, 8)}</p>
+                        {getStatusBadge(order.status)}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-2">
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <span>Order Date: {new Date(order.order_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <span>Delivery Date: {new Date(order.delivery_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <User className="h-4 w-4 mr-2" />
+                          <span>
+                            {order.user_id?.name} {order.user_id?.surname}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Phone className="h-4 w-4 mr-2" />
+                          <span>{order.user_id?.mobile}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Package className="h-4 w-4 mr-2" />
+                          <span>
+                            Block {order.user_id?.block_number}, Unit {order.user_id?.unit_number}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          <span>
+                            Payment: {order.payment_method === 'cod' ? 'Cash on Delivery' : 'EFT'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <span className={`px-3 py-1 text-xs rounded-full ${
-                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      order.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-
-                  {order.order_items?.length > 0 && (
-                    <ul className="mt-2 text-sm list-disc pl-5">
-                      {order.order_items.map((item, idx) => (
-                        <li key={idx}>
-                          {item.quantity} × {item.products.name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  <div className="mt-3 space-x-2">
-                    {order.status === 'pending' && (
-                      <>
-                        <button
-                          className="px-3 py-1 text-sm font-medium bg-green-600 text-white rounded"
-                          onClick={() => handleUpdateOrderStatus(order.id, 'approved')}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="px-3 py-1 text-sm font-medium bg-red-600 text-white rounded"
-                          onClick={() => handleUpdateOrderStatus(order.id, 'rejected')}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {order.status === 'approved' && (
-                      <button
-                        className="px-3 py-1 text-sm font-medium bg-blue-600 text-white rounded"
-                        onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                    
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-lg font-semibold text-terracotta">
+                        R{order.total?.toFixed(2)}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleOrderExpand(order.id)}
+                        className="text-xs"
                       >
-                        Mark as Completed
-                      </button>
-                    )}
+                        {expandedOrderId === order.id ? 'Hide Details' : 'View Details'}
+                      </Button>
+                    </div>
                   </div>
+
+                  {expandedOrderId === order.id && (
+                    <div className="mt-4 border-t pt-4">
+                      <h3 className="font-medium mb-2">Order Items</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          {order.order_items?.map((item) => (
+                            <div key={item.id} className="flex justify-between border-b pb-2">
+                              <div>
+                                <span className="font-medium">{item.product_name}</span>
+                                {item.flavor && (
+                                  <span className="text-sm text-muted-foreground ml-2">
+                                    ({item.flavor})
+                                  </span>
+                                )}
+                                <div className="text-sm text-muted-foreground">
+                                  {item.quantity} × R{item.price?.toFixed(2)}
+                                </div>
+                              </div>
+                              <div className="font-medium">
+                                R{(item.quantity * (item.price || 0)).toFixed(2)}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="flex justify-between pt-2 font-medium">
+                            <span>Total</span>
+                            <span>R{order.total?.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div>
+                          {order.is_special_order && (
+                            <div className="mb-3">
+                              <h4 className="text-sm font-medium mb-1">Special Order</h4>
+                              {order.special_instructions ? (
+                                <p className="text-sm p-2 bg-gray-50 rounded border">
+                                  {order.special_instructions}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground italic">
+                                  No special instructions provided
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-wrap gap-2 mt-4">
+                            {order.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleUpdateOrderStatus(order.id, 'approved')}
+                                >
+                                  <Check className="mr-1 h-4 w-4" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-red-600 hover:bg-red-700"
+                                  onClick={() => handleUpdateOrderStatus(order.id, 'rejected')}
+                                >
+                                  <X className="mr-1 h-4 w-4" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            {order.status === 'approved' && (
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700"
+                                onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                              >
+                                <Check className="mr-1 h-4 w-4" />
+                                Mark as Completed
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
