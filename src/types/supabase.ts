@@ -68,6 +68,7 @@ export type Database = {
           total: number;
           is_special_order: boolean;
           special_instructions?: string;
+          payment_method?: string;
         };
         Insert: {
           id?: string;
@@ -78,6 +79,7 @@ export type Database = {
           total: number;
           is_special_order: boolean;
           special_instructions?: string;
+          payment_method?: string;
         };
         Update: {
           id?: string;
@@ -88,6 +90,7 @@ export type Database = {
           total?: number;
           is_special_order?: boolean;
           special_instructions?: string;
+          payment_method?: string;
         };
       };
       order_items: {

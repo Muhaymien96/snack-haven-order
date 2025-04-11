@@ -99,6 +99,7 @@ export type Database = {
           id: string
           is_special_order: boolean | null
           order_date: string | null
+          payment_method: string | null
           special_instructions: string | null
           status: string | null
           total: number | null
@@ -109,6 +110,7 @@ export type Database = {
           id?: string
           is_special_order?: boolean | null
           order_date?: string | null
+          payment_method?: string | null
           special_instructions?: string | null
           status?: string | null
           total?: number | null
@@ -119,6 +121,7 @@ export type Database = {
           id?: string
           is_special_order?: boolean | null
           order_date?: string | null
+          payment_method?: string | null
           special_instructions?: string | null
           status?: string | null
           total?: number | null
