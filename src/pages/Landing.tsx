@@ -13,15 +13,25 @@ const Landing = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const performLogout = async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Error logging out:', error);
-      } else {
-        console.log('User logged out successfully');
-      }
+    // Check current session on load
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data?.session);
     };
 
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    checkSession();
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from('products')
@@ -36,16 +46,7 @@ const Landing = () => {
       }
     };
 
-    const checkUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data?.user) {
-        setIsAuthenticated(true);
-      }
-    };
-
-    performLogout();
     fetchProducts();
-    checkUser();
   }, []);
 
   return (
@@ -60,19 +61,19 @@ const Landing = () => {
             Delicious homemade treats delivered to your doorstep. From sweet Bollas to savory Samoosas.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button 
+            <Button
               asChild
-              size="lg" 
+              size="lg"
               className="bg-terracotta hover:bg-terracotta/90 text-white"
             >
               <Link to="/products">
                 Browse Products <ShoppingBag className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button 
+            <Button
               asChild
-              size="lg" 
-              variant="outline" 
+              size="lg"
+              variant="outline"
               className="border-terracotta text-terracotta hover:bg-terracotta/10"
             >
               <Link to="/contact">
@@ -93,9 +94,9 @@ const Landing = () => {
                 Traditional South African snacks made with love
               </p>
             </div>
-            <Button 
+            <Button
               asChild
-              variant="link" 
+              variant="link"
               className="text-terracotta"
             >
               <Link to="/products">
@@ -168,11 +169,11 @@ const Landing = () => {
             <p className="mb-8 max-w-2xl mx-auto">
               Create an account to start ordering our delicious South African treats for delivery.
             </p>
-            <Button 
+            <Button
               asChild
-              size="lg" 
-              variant="outline" 
-              className="border-white text-white hover:bg-white/10"
+              size="lg"
+              variant="outline"
+              className="border-cream text-sage hover:bg-cream/10"
             >
               <Link to="/register">
                 Register Now
