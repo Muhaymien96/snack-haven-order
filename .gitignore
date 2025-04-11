@@ -23,4 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
+# dotenv files (DO NOT COMMIT SECRETS)
 .env
+.env.*     # includes .env.local, .env.development etc.
