@@ -72,7 +72,7 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
       {showActions && (
         <CardContent className="pt-0">
           {parsedFlavours.length > 0 && (
-            <Select value={selectedFlavor} onValueChange={setSelectedFlavor} className="mb-3">
+            <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select flavor" />
               </SelectTrigger>

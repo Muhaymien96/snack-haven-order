@@ -10,8 +10,9 @@ import { useOrder } from '@/contexts/OrderContext';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Filter, Search } from 'lucide-react';
+import { ShoppingCart, Filter, Search, Plus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Products = () => {
   const [products, setProducts] = useState<any[]>([]);
