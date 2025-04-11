@@ -1,14 +1,18 @@
+
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag, User, Cake } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, User, Cake, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import CartIcon from './CartIcon';
+import { toast } from '@/hooks/use-toast';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [role, setRole] = useState<string | null>(null);
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -34,6 +38,24 @@ const Navbar = () => {
   }, [user]);
 
   const accountPath = role === 'admin' ? '/admin' : '/account';
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account"
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Sign out failed",
+        description: "There was a problem signing out. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <nav className="bg-cream shadow-sm">
@@ -62,17 +84,25 @@ const Navbar = () => {
             <Link to="/contact" className={`text-amber-800 hover:text-amber-600 transition-colors ${isActive('/contact') ? 'font-medium' : ''}`}>
               Contact
             </Link>
-            <Link to="/cart">
-              <Button variant="ghost" size="icon">
-                <ShoppingBag size={24} className="text-amber-800" />
-              </Button>
-            </Link>
+            <CartIcon />
             {user ? (
-              <Link to={accountPath}>
-                <Button variant="ghost" size="icon">
-                  <User size={24} className="text-amber-800" />
-                </Button>
-              </Link>
+              <div className="flex items-center space-x-2">
+                <Link to={accountPath}>
+                  <Button variant="ghost" size="icon">
+                    <User size={24} className="text-amber-800" />
+                  </Button>
+                </Link>
+                {role === 'admin' && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleSignOut}
+                    title="Sign Out"
+                  >
+                    <LogOut size={20} className="text-amber-800" />
+                  </Button>
+                )}
+              </div>
             ) : (
               <Link to="/login" className={`text-amber-800 hover:text-amber-600 transition-colors ${isActive('/login') ? 'font-medium' : ''}`}>
                 Login
@@ -96,19 +126,31 @@ const Navbar = () => {
               Contact
             </Link>
             {user ? (
-              <Link to={accountPath} onClick={closeMenu} className="text-amber-800 hover:text-amber-600 py-2">
-                My Account
-              </Link>
+              <>
+                <Link to={accountPath} onClick={closeMenu} className="text-amber-800 hover:text-amber-600 py-2">
+                  My Account
+                </Link>
+                {role === 'admin' && (
+                  <button 
+                    onClick={() => {
+                      handleSignOut();
+                      closeMenu();
+                    }} 
+                    className="flex items-center text-amber-800 hover:text-amber-600 py-2"
+                  >
+                    <LogOut size={18} className="mr-2" />
+                    Sign Out
+                  </button>
+                )}
+              </>
             ) : (
               <Link to="/login" onClick={closeMenu} className={`text-amber-800 hover:text-amber-600 py-2 ${isActive('/login') ? 'font-medium' : ''}`}>
                 Login
               </Link>
             )}
-            <Link to="/cart" onClick={closeMenu}>
-              <Button variant="ghost" size="icon">
-                <ShoppingBag size={24} className="text-amber-800" />
-              </Button>
-            </Link>
+            <div onClick={closeMenu}>
+              <CartIcon />
+            </div>
           </div>
         </div>
       )}

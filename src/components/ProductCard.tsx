@@ -53,6 +53,7 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
   };
 
   const bulkOptions = isSpecialOrder ? [10, 20, 30, 40, 50] : [1, 2, 3, 4, 5];
+  const displayQuantity = customQuantity ? parseInt(customQuantity, 10) : quantity;
 
   return (
     <Card className="h-full flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300 border-transparent hover:border-terracotta/20">
@@ -128,8 +129,10 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
                   variant="default"
                   className="bg-terracotta hover:bg-terracotta/90 flex-shrink-0"
                   onClick={handleAddToCart}
+                  title="Add to Cart"
                 >
                   <ShoppingCart className="h-4 w-4" />
+                  <span className="ml-1">{displayQuantity}</span>
                 </Button>
               </div>
             </div>
@@ -140,7 +143,7 @@ const ProductCard = ({ product, showActions = true }: ProductCardProps) => {
               onClick={handleAddToCart}
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
-              Add to Cart
+              Add to Cart ({displayQuantity})
             </Button>
           )}
         </CardContent>
