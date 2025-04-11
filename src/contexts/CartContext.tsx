@@ -57,7 +57,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex(
         (item) => item.product.id === product.id && 
-                  (product.flavors ? item.flavor === flavor : true)
+                  (product.flavours ? item.flavor === flavor : true)
       );
 
       if (existingItemIndex > -1) {
